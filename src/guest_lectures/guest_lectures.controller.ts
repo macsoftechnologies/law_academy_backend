@@ -97,7 +97,7 @@ export class GuestLecturesController {
   )
   async editGuestLecture(@Body() req: guestLectureDto, @UploadedFiles() image) {
     try {
-      const editlecture = await this.editGuestLecture(req, image);
+      const editlecture = await this.guestLecturesService.editGuestLecture(req, image);
       return editlecture;
     } catch (error) {
       return {
