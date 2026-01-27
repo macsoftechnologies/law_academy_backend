@@ -4,6 +4,7 @@ import {
   Get,
   HttpStatus,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { AdminService } from './admin.service';
@@ -60,9 +61,12 @@ export class AdminController {
   @UseGuards(JwtGuard, RolesGuard)
   @Roles(Role.SUPERADMIN)
   @Get('/')
-  async getAdminsList() {
+  async getAdminsList(@Query('page') page = 10, @Query('limit') limit = 10) {
     try{
-      const getlist = await this.adminService.getAdmins();
+      const getlist = await this.adminService.getAdmins(
+        Number(page),
+        Number(limit)
+      );
       return getlist
     } catch(error){
       return {

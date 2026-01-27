@@ -1,22 +1,13 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpStatus,
-  Post,
-  Query,
-  UploadedFiles,
-  UseInterceptors,
-} from '@nestjs/common';
-import { CategoriesService } from './categories.service';
-import { categoryDto } from './dto/category.dto';
+import { Body, Controller, Get, HttpStatus, Post, Query, UploadedFiles, UseInterceptors } from '@nestjs/common';
+import { SubcategoriesService } from './subcategories.service';
+import { subCategoryDto } from '../dto/subcategory.dto';
 import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 
-@Controller('categories')
-export class CategoriesController {
-  constructor(private readonly categoriesService: CategoriesService) {}
+@Controller('subcategories')
+export class SubcategoriesController {
+  constructor(private readonly subcategoriesService: SubcategoriesService) {}
 
   @Post('/add')
   @UseInterceptors(
@@ -36,38 +27,51 @@ export class CategoriesController {
       }),
     }),
   )
-  async addcategory(@Body() req: categoryDto, @UploadedFiles() image) {
-    try {
-      const add = await this.categoriesService.addCategory(req, image);
-      return add;
-    } catch (error) {
+  async addSubCategory(@Body() req: subCategoryDto, @UploadedFiles() image) {
+    try{
+      const add = await this.subcategoriesService.addsubcategory(req, image)
+      return add
+    } catch(error) {
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: error,
-      };
+        message: error
+      }
     }
   }
 
   @Get('/')
-  async getcategories(@Query('page') page = 10, @Query('limit') limit = 10) {
-    try {
-      const list = await this.categoriesService.getcategories(
+  async getsubcategorieslist(@Query('page') page = 10, @Query('limit') limit = 10) {
+    try{
+      const getlist = await this.subcategoriesService.getSubCategories(
         Number(page),
         Number(limit)
       );
-      return list;
-    } catch (error) {
+      return getlist
+    } catch(error){
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error,
-      };
+      }
+    }
+  }
+
+  @Post('/getbycategory')
+  async getSubCategoriesById(@Body() req: subCategoryDto) {
+    try{
+       const getlist = await this.subcategoriesService.getSubCategoriesByCategory(req);
+       return getlist
+    } catch(error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error,
+      }
     }
   }
 
   @Post('/details')
-  async findcategory(@Body() req: categoryDto) {
+  async findcategory(@Body() req: subCategoryDto) {
     try {
-      const findcategory = await this.categoriesService.getcategoryById(req);
+      const findcategory = await this.subcategoriesService.getsubcategoryById(req);
       return findcategory;
     } catch (error) {
       return {
@@ -95,9 +99,9 @@ export class CategoriesController {
       }),
     }),
   )
-  async updatecategory(@Body() req: categoryDto, @UploadedFiles() image) {
+  async updatesubcategory(@Body() req: subCategoryDto, @UploadedFiles() image) {
     try {
-      const editcat = await this.categoriesService.updateCategory(req, image);
+      const editcat = await this.subcategoriesService.updateSubCategory(req, image);
       return editcat;
     } catch (error) {
       return {
@@ -108,9 +112,9 @@ export class CategoriesController {
   }
 
   @Post('/delete')
-  async deletecategory(@Body() req: categoryDto) {
+  async deletesubcategory(@Body() req: subCategoryDto) {
     try {
-      const remove = await this.categoriesService.deleteCategory(req);
+      const remove = await this.subcategoriesService.deleteSubCategory(req);
       return remove;
     } catch (error) {
       return {

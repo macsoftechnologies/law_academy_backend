@@ -11,7 +11,8 @@ import { SuperAdmin } from './schema/superadmin.schema';
 export class AdminService {
   constructor(
     @InjectModel(Admin.name) private readonly adminModel: Model<Admin>,
-    @InjectModel(SuperAdmin.name) private readonly superAdminModel: Model<SuperAdmin>,
+    @InjectModel(SuperAdmin.name)
+    private readonly superAdminModel: Model<SuperAdmin>,
     private readonly authService: AuthService,
   ) {}
 
@@ -27,7 +28,7 @@ export class AdminService {
         const createAdmin = await this.superAdminModel.create({
           mobile_number: req.mobile_number,
           email: req.email,
-          password: bcryptPassword
+          password: bcryptPassword,
         });
         if (createAdmin) {
           return {
@@ -73,7 +74,7 @@ export class AdminService {
         // console.log(matchPassword);
         if (matchPassword) {
           const jwtToken = await this.authService.createToken({ findAdmin });
-            console.log(jwtToken);
+          console.log(jwtToken);
           return {
             statusCode: HttpStatus.OK,
             message: 'Super Admin Login successfull',
@@ -109,7 +110,7 @@ export class AdminService {
           emailId: req.emailId,
           password: bcryptPassword,
           role: req.role,
-          access_modules: req.access_modules
+          access_modules: req.access_modules,
         });
         if (createAdmin) {
           return {
@@ -137,19 +138,28 @@ export class AdminService {
     }
   }
 
-  async getAdmins() {
-    const getlist = await this.adminModel.find();
-    if(getlist.length) {
+  async getAdmins(page: number, limit: number) {
+    try {
+      const skip = (page - 1) * limit;
+
+      const [getList, totalCount] = await Promise.all([
+        this.adminModel.find().skip(skip).limit(limit),
+        this.adminModel.countDocuments(),
+      ]);
       return {
         statusCode: HttpStatus.OK,
-        message: "List of Higher Level Users",
-        data: getlist
-      }
-    } else {
+        message: 'List of Admin Users',
+        totalCount: totalCount,
+        currentPage: page,
+        totalPages: Math.ceil(totalCount / limit),
+        limit,
+        data: getList,
+      };
+    } catch (error) {
       return {
-        statusCode: HttpStatus.NOT_FOUND,
-        message: "No Users Found",
-      }
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error,
+      };
     }
   }
 
@@ -171,7 +181,7 @@ export class AdminService {
         // console.log(matchPassword);
         if (matchPassword) {
           const jwtToken = await this.authService.createToken({ findAdmin });
-            console.log(jwtToken);
+          console.log(jwtToken);
           return {
             statusCode: HttpStatus.OK,
             message: 'Admin Login successfull',
@@ -194,36 +204,39 @@ export class AdminService {
   }
 
   async editAdmin(req: adminDto) {
-    try{
-      const editadmin = await this.adminModel.updateOne({adminId: req.adminId}, {
-        $set: {
-          access_modules: req.access_modules
-        }
-      });
-      if(editadmin) {
+    try {
+      const editadmin = await this.adminModel.updateOne(
+        { adminId: req.adminId },
+        {
+          $set: {
+            access_modules: req.access_modules,
+          },
+        },
+      );
+      if (editadmin) {
         return {
           statusCode: HttpStatus.OK,
-          message: "Modules Access updated successfully",
-        }
+          message: 'Modules Access updated successfully',
+        };
       } else {
         return {
           statusCode: HttpStatus.EXPECTATION_FAILED,
-          message: "Failed to update modules access"
-        }
+          message: 'Failed to update modules access',
+        };
       }
-    } catch(error) {
+    } catch (error) {
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error,
-      }
+      };
     }
   }
 
   async forgotPassword(req: adminDto) {
     try {
-      const findAdmin = await this.adminModel.findOne({ 
+      const findAdmin = await this.adminModel.findOne({
         $or: [{ emailId: req.emailId }, { mobileNumber: req.mobileNumber }],
-       });
+      });
       if (findAdmin) {
         const bcryptPassword = await this.authService.hashPassword(
           req.password,
@@ -264,24 +277,26 @@ export class AdminService {
   }
 
   async deleteAdmin(req: adminDto) {
-    try{
-      const removeadmin = await this.adminModel.deleteOne({adminId: req.adminId});
-      if(removeadmin){
+    try {
+      const removeadmin = await this.adminModel.deleteOne({
+        adminId: req.adminId,
+      });
+      if (removeadmin) {
         return {
           statusCode: HttpStatus.OK,
-          message: "Admin Removed Successfully",
-        }
+          message: 'Admin Removed Successfully',
+        };
       } else {
         return {
           statusCode: HttpStatus.EXPECTATION_FAILED,
-          message: "Failed to delete Admin",
-        }
+          message: 'Failed to delete Admin',
+        };
       }
-    } catch(error) {
+    } catch (error) {
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: error
-      }
+        message: error,
+      };
     }
   }
 }

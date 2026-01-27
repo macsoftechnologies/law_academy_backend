@@ -10,3 +10,10 @@ export enum DetailsRequestStatus{
     PENDING = 'pending',
     COMPLETED = 'completed',
 }
+
+export enum ModuleType{
+    COURSE = 'course',
+    MAINS = 'mains',
+    PRELIMS = 'prelims',
+    NOTES = 'notes'
+}

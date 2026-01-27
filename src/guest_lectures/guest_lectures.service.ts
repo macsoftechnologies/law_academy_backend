@@ -1,16 +1,17 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { Category } from './schema/category.schema';
 import { InjectModel } from '@nestjs/mongoose';
+import { GuestLecture } from './schema/guest_lecture.schema';
 import { Model } from 'mongoose';
-import { categoryDto } from './dto/category.dto';
+import { guestLectureDto } from './dto/guest_lecture.dto';
 
 @Injectable()
-export class CategoriesService {
+export class GuestLecturesService {
   constructor(
-    @InjectModel(Category.name) private readonly categoryModel: Model<Category>,
+    @InjectModel(GuestLecture.name)
+    private readonly guestLectureModel: Model<GuestLecture>,
   ) {}
 
-  async addCategory(req: categoryDto, image) {
+  async addGuestLecture(req: guestLectureDto, image) {
     try {
       if (image) {
         const reqDoc = image.map((doc, index) => {
@@ -22,19 +23,18 @@ export class CategoriesService {
           return doc.filename;
         });
 
-        req.presentation_file = reqDoc.toString();
+        req.presentation_image = reqDoc.toString();
       }
-      const addcategory = await this.categoryModel.create(req);
-      if (addcategory) {
+      const add = await this.guestLectureModel.create(req);
+      if (add) {
         return {
           statusCode: HttpStatus.OK,
-          message: 'Category added successfully',
-          data: addcategory,
+          message: 'Guest Lecture added Successfully',
         };
       } else {
         return {
           statusCode: HttpStatus.EXPECTATION_FAILED,
-          message: 'failed to add',
+          message: 'Failed to add',
         };
       }
     } catch (error) {
@@ -45,17 +45,17 @@ export class CategoriesService {
     }
   }
 
-  async getcategories(page: number, limit: number) {
+  async getGuestLecturesList(page: number, limit: number) {
     try {
       const skip = (page - 1) * limit;
 
       const [getList, totalCount] = await Promise.all([
-        this.categoryModel.find().skip(skip).limit(limit),
-        this.categoryModel.countDocuments(),
+        this.guestLectureModel.find().skip(skip).limit(limit),
+        this.guestLectureModel.countDocuments(),
       ]);
       return {
         statusCode: HttpStatus.OK,
-        message: 'List of Categories',
+        message: 'List of Guest Lectures',
         totalCount: totalCount,
         currentPage: page,
         totalPages: Math.ceil(totalCount / limit),
@@ -70,21 +70,21 @@ export class CategoriesService {
     }
   }
 
-  async getcategoryById(req: categoryDto) {
+  async getGuestLectureById(req: guestLectureDto) {
     try {
-      const findCategory = await this.categoryModel.findOne({
-        categoryId: req.categoryId,
+      const getlecture = await this.guestLectureModel.findOne({
+        guest_lecture_id: req.guest_lecture_id,
       });
-      if (findCategory) {
+      if (getlecture) {
         return {
           statusCode: HttpStatus.OK,
-          message: 'Category Details',
-          data: findCategory,
+          message: 'Guest Lecture Details',
+          data: getlecture,
         };
       } else {
         return {
           statusCode: HttpStatus.NOT_FOUND,
-          message: 'Category not found',
+          message: 'Guest Lecture not found',
         };
       }
     } catch (error) {
@@ -95,7 +95,7 @@ export class CategoriesService {
     }
   }
 
-  async updateCategory(req: categoryDto, image) {
+  async editGuestLecture(req: guestLectureDto, image) {
     try {
         if (image) {
           const reqDoc = image.map((doc, index) => {
@@ -107,49 +107,57 @@ export class CategoriesService {
             return doc.filename;
           });
 
-          req.presentation_file = reqDoc.toString();
+          req.presentation_image = reqDoc.toString();
         }
-      if (req.presentation_file) {
-        const editCategory = await this.categoryModel.updateOne(
-          { categoryId: req.categoryId },
+      if (req.presentation_image) {
+        const updateLecture = await this.guestLectureModel.updateOne(
+          { guest_lecture_id: req.guest_lecture_id },
           {
             $set: {
-              category_name: req.category_name,
-              tag_text: req.tag_text,
-              presentation_file: req.presentation_file,
+              title: req.title,
+              author: req.author,
+              duration: req.duration,
+              about_class: req.about_class,
+              about_lecture: req.about_lecture,
+              video_url: req.video_url,
+              presentation_image: req.presentation_image,
             },
           },
         );
-        if (editCategory.modifiedCount > 0) {
+        if (updateLecture.modifiedCount > 0) {
           return {
             statusCode: HttpStatus.OK,
-            message: 'Category updated successfully',
+            message: 'Guest Lecture Updated Successfully',
           };
         } else {
           return {
             statusCode: HttpStatus.EXPECTATION_FAILED,
-            message: 'failed to update',
+            message: 'Failed to update.',
           };
         }
       } else {
-        const editCategory = await this.categoryModel.updateOne(
-          { categoryId: req.categoryId },
+        const updateLecture = await this.guestLectureModel.updateOne(
+          { guest_lecture_id: req.guest_lecture_id },
           {
             $set: {
-              category_name: req.category_name,
-              tag_text: req.tag_text,
+              title: req.title,
+              author: req.author,
+              duration: req.duration,
+              about_class: req.about_class,
+              about_lecture: req.about_lecture,
+              video_url: req.video_url,
             },
           },
         );
-        if (editCategory.modifiedCount > 0) {
+        if (updateLecture.modifiedCount > 0) {
           return {
             statusCode: HttpStatus.OK,
-            message: 'Category updated successfully',
+            message: 'Guest Lecture Updated Successfully',
           };
         } else {
           return {
             statusCode: HttpStatus.EXPECTATION_FAILED,
-            message: 'failed to update',
+            message: 'Failed to update.',
           };
         }
       }
@@ -161,20 +169,20 @@ export class CategoriesService {
     }
   }
 
-  async deleteCategory(req: categoryDto) {
+  async deleteGuestLecture(req: guestLectureDto) {
     try {
-      const removeCategory = await this.categoryModel.deleteOne({
-        categoryId: req.categoryId,
+      const remove = await this.guestLectureModel.deleteOne({
+        guest_lecture_id: req.guest_lecture_id,
       });
-      if (removeCategory) {
+      if (remove) {
         return {
           statusCode: HttpStatus.OK,
-          message: 'Category delete successfully',
+          message: 'Guest Lecture has been removed successfully',
         };
       } else {
         return {
           statusCode: HttpStatus.EXPECTATION_FAILED,
-          message: 'failed to delete',
+          message: 'Failed to delete guest lecture.',
         };
       }
     } catch (error) {

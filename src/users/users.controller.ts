@@ -240,6 +240,19 @@ export class UsersController {
     }
   }
 
+  @Post('/deletecertificate')
+  async removecertificate(@Body() req: educationalCertificatesDto) {
+    try {
+      const user_certificates = await this.usersService.removeCertificate(req);
+      return user_certificates;
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error,
+      };
+    }
+  }
+
   @UseGuards(JwtGuard, RolesGuard)
   @Roles(Role.STUDENT)
   @Post('/addidproof')
@@ -285,6 +298,19 @@ export class UsersController {
     }
   }
 
+  @Post('/deleteidproof')
+  async removeproof(@Body() req: idProofDto) {
+    try {
+      const user_certificates = await this.usersService.removeProof(req);
+      return user_certificates;
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error,
+      };
+    }
+  }
+
   @UseGuards(JwtGuard)
   @Get('/')
   async getUsers(@Query('page') page = 1, @Query('limit') limit = 10) {
@@ -304,14 +330,14 @@ export class UsersController {
 
   @Post('/details')
   async userDetailsById(@Body() req: registerDto) {
-    try{
+    try {
       const getdetails = await this.usersService.getUserById(req);
-      return getdetails
-    } catch(error) {
+      return getdetails;
+    } catch (error) {
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: error
-      }
+        message: error,
+      };
     }
   }
 }

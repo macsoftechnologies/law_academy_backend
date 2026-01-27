@@ -261,7 +261,7 @@ export class UsersService {
             return {
               statusCode: HttpStatus.OK,
               message: 'Password Updated Successfully',
-              data: updatepassword
+              data: updatepassword,
             };
           } else {
             return {
@@ -511,6 +511,31 @@ export class UsersService {
     }
   }
 
+  async removeCertificate(req: educationalCertificatesDto) {
+    try {
+      const removecertificate =
+        await this.educationalCertificatesModel.deleteOne({
+          certificate_id: req.certificate_id,
+        });
+      if (removecertificate) {
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'Certificate deleted successfully',
+        };
+      } else {
+        return {
+          statusCode: HttpStatus.EXPECTATION_FAILED,
+          message: 'failed to delete',
+        };
+      }
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error,
+      };
+    }
+  }
+
   async addIdProof(req: idProofDto, image) {
     try {
       if (image) {
@@ -525,8 +550,7 @@ export class UsersService {
 
         req.proof_file = reqDoc.toString();
       }
-      const addproof =
-        await this.idProofsModel.create(req);
+      const addproof = await this.idProofsModel.create(req);
       if (addproof) {
         return {
           statusCode: HttpStatus.OK,
@@ -572,51 +596,126 @@ export class UsersService {
     }
   }
 
+  async removeProof(req: idProofDto) {
+    try {
+      const removeproof = await this.idProofsModel.deleteOne({
+        proof_id: req.proof_id,
+      });
+      if (removeproof) {
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'IdProof deleted successfully',
+        };
+      } else {
+        return {
+          statusCode: HttpStatus.EXPECTATION_FAILED,
+          message: 'failed to delete',
+        };
+      }
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error,
+      };
+    }
+  }
+
   async getStudents(page: number, limit: number) {
-    try{
+    try {
       const skip = (page - 1) * limit;
 
-      const [getList, totalCount] = await Promise.all([
-        this.userModel.find().skip(skip).limit(limit),
+      const [students, totalCount] = await Promise.all([
+        this.userModel.aggregate([
+          { $skip: skip },
+          { $limit: limit },
+          {
+            $lookup: {
+              from: 'educationalcertificates',
+              localField: 'userId',
+              foreignField: 'userId',
+              as: 'certificates',
+            },
+          },
+          {
+            $lookup: {
+              from: 'idproofs',
+              localField: 'userId',
+              foreignField: 'userId',
+              as: 'idProofs',
+            },
+          },
+          {
+            $project: {
+              password: 0,
+              __v: 0,
+            },
+          },
+        ]),
+
         this.userModel.countDocuments(),
       ]);
+
       return {
         statusCode: HttpStatus.OK,
         message: 'List of Students',
-        totalCount: totalCount,
+        totalCount,
         currentPage: page,
         totalPages: Math.ceil(totalCount / limit),
         limit,
-        data: getList,
+        data: students,
       };
-    } catch(error) {
+    } catch (error) {
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: error
-      }
+        message: error.message || error,
+      };
     }
   }
 
   async getUserById(req: registerDto) {
-    try{
-      const getdetails = await this.userModel.findOne({userId: req.userId});
-      if(getdetails) {
+    try {
+      const getdetails = await this.userModel.aggregate([
+        { $match: { userId: req.userId } },
+        {
+          $lookup: {
+            from: 'educationalcertificates',
+            localField: 'userId',
+            foreignField: 'userId',
+            as: 'certificates',
+          },
+        },
+        {
+          $lookup: {
+            from: 'idproofs',
+            localField: 'userId',
+            foreignField: 'userId',
+            as: 'idProofs',
+          },
+        },
+        {
+          $project: {
+            password: 0,
+            __v: 0,
+          },
+        },
+      ]);
+      if (getdetails) {
         return {
           statusCode: HttpStatus.OK,
-          message: "Student Details",
-          data: getdetails
-        }
+          message: 'Student Details',
+          data: getdetails,
+        };
       } else {
         return {
           statusCode: HttpStatus.NOT_FOUND,
-          message: "User not found",
-        }
+          message: 'User not found',
+        };
       }
-    } catch(error) {
+    } catch (error) {
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: error
-      }
+        message: error,
+      };
     }
   }
 }

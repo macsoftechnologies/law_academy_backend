@@ -10,6 +10,8 @@ export class Category extends Document{
     category_name: string
     @Prop()
     tag_text: string
+    @Prop()
+    presentation_file: string
 }
 
 export const categorySchema = SchemaFactory.createForClass(Category);

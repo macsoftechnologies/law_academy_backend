@@ -7,4 +7,6 @@ export class categoryDto {
   category_name: string;
   @ApiProperty()
   tag_text: string;
+  @ApiProperty()
+  presentation_file: string
 }

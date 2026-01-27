@@ -12,6 +12,12 @@ import { AdminModule } from './admin/admin.module';
 import { UsersModule } from './users/users.module';
 import { BannersModule } from './banners/banners.module';
 import { CategoriesModule } from './categories/categories.module';
+import { PlansModule } from './plans/plans.module';
+import { EnrollmentsModule } from './enrollments/enrollments.module';
+import { GuestLecturesModule } from './guest_lectures/guest_lectures.module';
+import { LawsModule } from './laws/laws.module';
+import { SubjectsModule } from './subjects/subjects.module';
+import { LecturesModule } from './lectures/lectures.module';
 
 @Module({
   imports: [
@@ -34,6 +40,12 @@ import { CategoriesModule } from './categories/categories.module';
     UsersModule,
     BannersModule,
     CategoriesModule,
+    PlansModule,
+    EnrollmentsModule,
+    GuestLecturesModule,
+    LawsModule,
+    SubjectsModule,
+    LecturesModule,
   ],
   controllers: [AppController],
   providers: [

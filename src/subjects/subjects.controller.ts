@@ -1,22 +1,13 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpStatus,
-  Post,
-  Query,
-  UploadedFiles,
-  UseInterceptors,
-} from '@nestjs/common';
-import { CategoriesService } from './categories.service';
-import { categoryDto } from './dto/category.dto';
+import { Body, Controller, Get, HttpStatus, Post, Query, UploadedFiles, UseInterceptors } from '@nestjs/common';
+import { SubjectsService } from './subjects.service';
 import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import { subjectDto } from './dto/subject.dto';
 
-@Controller('categories')
-export class CategoriesController {
-  constructor(private readonly categoriesService: CategoriesService) {}
+@Controller('subjects')
+export class SubjectsController {
+  constructor(private readonly subjectsService: SubjectsService) {}
 
   @Post('/add')
   @UseInterceptors(
@@ -36,44 +27,44 @@ export class CategoriesController {
       }),
     }),
   )
-  async addcategory(@Body() req: categoryDto, @UploadedFiles() image) {
-    try {
-      const add = await this.categoriesService.addCategory(req, image);
-      return add;
-    } catch (error) {
+  async addsubject(@Body() req: subjectDto, @UploadedFiles() image) {
+    try{
+      const add = await this.subjectsService.addSubject(req, image);
+      return add
+    } catch(error){
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error,
-      };
+      }
     }
   }
 
   @Get('/')
-  async getcategories(@Query('page') page = 10, @Query('limit') limit = 10) {
-    try {
-      const list = await this.categoriesService.getcategories(
+  async getLaws(@Query('page') page = 1, @Query('limit') limit = 10) {
+    try{
+      const getlist = await this.subjectsService.getSubjects(
         Number(page),
         Number(limit)
       );
-      return list;
-    } catch (error) {
+      return getlist
+    } catch(error) {
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error,
-      };
+      }
     }
   }
 
-  @Post('/details')
-  async findcategory(@Body() req: categoryDto) {
-    try {
-      const findcategory = await this.categoriesService.getcategoryById(req);
-      return findcategory;
-    } catch (error) {
+  @Post('/listbylaw')
+  async getSubjectsByLaw(@Body() req: subjectDto) {
+    try{
+      const list = await this.subjectsService.getByLaw(req);
+      return list
+    } catch(error) {
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error,
-      };
+      }
     }
   }
 
@@ -95,28 +86,28 @@ export class CategoriesController {
       }),
     }),
   )
-  async updatecategory(@Body() req: categoryDto, @UploadedFiles() image) {
-    try {
-      const editcat = await this.categoriesService.updateCategory(req, image);
-      return editcat;
-    } catch (error) {
+  async updatesubject(@Body() req: subjectDto, @UploadedFiles() image) {
+    try{
+      const add = await this.subjectsService.editSubject(req, image);
+      return add
+    } catch(error){
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error,
-      };
+      }
     }
   }
 
   @Post('/delete')
-  async deletecategory(@Body() req: categoryDto) {
-    try {
-      const remove = await this.categoriesService.deleteCategory(req);
-      return remove;
-    } catch (error) {
+  async deletesubject(@Body() req: subjectDto) {
+    try{
+      const list = await this.subjectsService.deleteSubject(req);
+      return list
+    } catch(error) {
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error,
-      };
+      }
     }
   }
 }

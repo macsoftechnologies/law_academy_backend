@@ -8,15 +8,15 @@ import {
   UploadedFiles,
   UseInterceptors,
 } from '@nestjs/common';
-import { CategoriesService } from './categories.service';
-import { categoryDto } from './dto/category.dto';
+import { GuestLecturesService } from './guest_lectures.service';
 import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import { guestLectureDto } from './dto/guest_lecture.dto';
 
-@Controller('categories')
-export class CategoriesController {
-  constructor(private readonly categoriesService: CategoriesService) {}
+@Controller('guest-lectures')
+export class GuestLecturesController {
+  constructor(private readonly guestLecturesService: GuestLecturesService) {}
 
   @Post('/add')
   @UseInterceptors(
@@ -36,9 +36,9 @@ export class CategoriesController {
       }),
     }),
   )
-  async addcategory(@Body() req: categoryDto, @UploadedFiles() image) {
+  async addGuestLecture(@Body() req: guestLectureDto, @UploadedFiles() image) {
     try {
-      const add = await this.categoriesService.addCategory(req, image);
+      const add = await this.guestLecturesService.addGuestLecture(req, image);
       return add;
     } catch (error) {
       return {
@@ -49,11 +49,11 @@ export class CategoriesController {
   }
 
   @Get('/')
-  async getcategories(@Query('page') page = 10, @Query('limit') limit = 10) {
+  async getGuestLectures(@Query('page') page = 1, @Query('limit') limit = 10) {
     try {
-      const list = await this.categoriesService.getcategories(
+      const list = await this.guestLecturesService.getGuestLecturesList(
         Number(page),
-        Number(limit)
+        Number(limit),
       );
       return list;
     } catch (error) {
@@ -65,10 +65,10 @@ export class CategoriesController {
   }
 
   @Post('/details')
-  async findcategory(@Body() req: categoryDto) {
+  async guestLectureDetails(@Body() req: guestLectureDto) {
     try {
-      const findcategory = await this.categoriesService.getcategoryById(req);
-      return findcategory;
+      const details = await this.guestLecturesService.getGuestLectureById(req);
+      return details;
     } catch (error) {
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -95,10 +95,10 @@ export class CategoriesController {
       }),
     }),
   )
-  async updatecategory(@Body() req: categoryDto, @UploadedFiles() image) {
+  async editGuestLecture(@Body() req: guestLectureDto, @UploadedFiles() image) {
     try {
-      const editcat = await this.categoriesService.updateCategory(req, image);
-      return editcat;
+      const editlecture = await this.editGuestLecture(req, image);
+      return editlecture;
     } catch (error) {
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -108,9 +108,9 @@ export class CategoriesController {
   }
 
   @Post('/delete')
-  async deletecategory(@Body() req: categoryDto) {
+  async removeLecture(@Body() req: guestLectureDto) {
     try {
-      const remove = await this.categoriesService.deleteCategory(req);
+      const remove = await this.guestLecturesService.deleteGuestLecture(req);
       return remove;
     } catch (error) {
       return {
