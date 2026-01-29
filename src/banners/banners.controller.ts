@@ -64,6 +64,36 @@ export class BannersController {
     }
   }
 
+  @Post('/update')
+  @UseInterceptors(
+    AnyFilesInterceptor({
+      limits: {
+        fileSize: 4 * 1024 * 1024,
+      },
+      storage: diskStorage({
+        destination: './files',
+        filename: (req, file, cb) => {
+          const randomName = Array(32)
+            .fill(null)
+            .map(() => Math.round(Math.random() * 16).toString(16))
+            .join('');
+          cb(null, `${randomName}${extname(file.originalname)}`);
+        },
+      }),
+    }),
+  )
+  async updateBanner(@Body() req: bannerDto, @UploadedFiles() image) {
+    try {
+      const banner = await this.bannersService.editBanner(req, image);
+      return banner;
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error,
+      };
+    }
+  }
+
   @Post('/delete')
   async removeBanner(@Body() req: bannerDto) {
     try {

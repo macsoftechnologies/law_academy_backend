@@ -68,6 +68,19 @@ export class SubcategoriesController {
     }
   }
 
+  @Post('/getbycategorywithuser')
+  async getSubCategoriesByIdWithUser(@Body() req: subCategoryDto) {
+    try{
+       const getlist = await this.subcategoriesService.getSubCategoriesByCategoryWithuser(req);
+       return getlist
+    } catch(error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error,
+      }
+    }
+  }
+
   @Post('/details')
   async findcategory(@Body() req: subCategoryDto) {
     try {

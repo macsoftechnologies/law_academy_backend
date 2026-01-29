@@ -51,6 +51,34 @@ export class SubjectsService {
         this.subjectModel.find().skip(skip).limit(limit),
         this.subjectModel.countDocuments(),
       ]);
+      const getlist = await this.subjectModel.aggregate([
+        {
+          $lookup: {
+            from: 'laws',
+            localField: 'law_id',
+            foreignField: 'lawId',
+            as: 'law_id',
+          },
+        },
+        {
+          $lookup: {
+            from: 'subcategories',
+            localField: 'subcategory_id',
+            foreignField: 'subcategory_id',
+            as: 'subcategory_id',
+          },
+        },
+        {
+          $lookup: {
+            from: 'categories',
+            localField: 'categoryId',
+            foreignField: 'categoryId',
+            as: 'categoryId',
+          },
+        },
+        { $skip: skip },
+        { $limit: limit },
+      ]);
       return {
         statusCode: HttpStatus.OK,
         message: 'List of Subjects',
@@ -58,7 +86,7 @@ export class SubjectsService {
         currentPage: page,
         totalPages: Math.ceil(totalCount / limit),
         limit,
-        data: getList,
+        data: getlist,
       };
     } catch(error) {
         return {

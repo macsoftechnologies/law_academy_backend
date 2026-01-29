@@ -17,3 +17,8 @@ export enum ModuleType{
     PRELIMS = 'prelims',
     NOTES = 'notes'
 }
+
+export enum enrollmentStatus {
+    ACTIVE = 'active',
+    EXPIRED = 'expired'
+}

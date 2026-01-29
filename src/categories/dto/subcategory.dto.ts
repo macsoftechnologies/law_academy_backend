@@ -13,4 +13,6 @@ export class subCategoryDto{
     terms_conditions: string
     @ApiProperty()
     categoryId: string
+    @ApiProperty()
+    userId: string
 }

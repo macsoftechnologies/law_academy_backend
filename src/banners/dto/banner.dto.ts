@@ -5,4 +5,6 @@ export class bannerDto{
     bannerId: string
     @ApiProperty()
     banner_file: string
+    @ApiProperty()
+    redirect_link: string
 }

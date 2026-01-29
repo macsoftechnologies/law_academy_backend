@@ -17,4 +17,6 @@ export class enrollmentDto {
   status: string;
   @ApiProperty()
   enroll_type: string
+  @ApiProperty()
+  planId: string
 }

@@ -114,6 +114,181 @@ export class SubcategoriesService {
     }
   }
 
+  async getSubCategoriesByCategoryWithuser(req: subCategoryDto) {
+    try {
+      const today = new Date();
+
+      const data = await this.subCategoryModel.aggregate([
+        {
+          $match: {
+            categoryId: req.categoryId,
+          },
+        },
+        {
+          $lookup: {
+            from: 'enrollments',
+            let: { subcategoryId: '$subcategory_id' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$course_id', '$$subcategoryId'] },
+                      { $eq: ['$userId', req.userId] },
+                      { $eq: ['$enroll_type', 'full-course'] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'enrollment',
+          },
+        },
+        {
+          $addFields: {
+            enrollment: { $arrayElemAt: ['$enrollment', 0] },
+          },
+        },
+        {
+          $addFields: {
+            enrolledDateClean: {
+              $cond: [
+                { $ifNull: ['$enrollment.enroll_date', false] },
+                {
+                  $replaceAll: {
+                    input: '$enrollment.enroll_date',
+                    find: ' (India Standard Time)',
+                    replacement: '',
+                  },
+                },
+                null,
+              ],
+            },
+            expiryDateClean: {
+              $cond: [
+                { $ifNull: ['$enrollment.expiry_date', false] },
+                {
+                  $replaceAll: {
+                    input: '$enrollment.expiry_date',
+                    find: ' (India Standard Time)',
+                    replacement: '',
+                  },
+                },
+                null,
+              ],
+            },
+          },
+        },
+        {
+          $addFields: {
+            enrolledDateObj: {
+              $cond: [
+                { $ifNull: ['$enrolledDateClean', false] },
+                {
+                  $dateFromString: {
+                    dateString: '$enrolledDateClean',
+                    onError: null,
+                    onNull: null,
+                  },
+                },
+                null,
+              ],
+            },
+            expiryDateObj: {
+              $cond: [
+                { $ifNull: ['$expiryDateClean', false] },
+                {
+                  $dateFromString: {
+                    dateString: '$expiryDateClean',
+                    onError: null,
+                    onNull: null,
+                  },
+                },
+                null,
+              ],
+            },
+          },
+        },
+        {
+          $addFields: {
+            isEnrolled: {
+              $cond: [{ $ifNull: ['$enrollment', false] }, true, false],
+            },
+
+            remaining_duration: {
+              $cond: [
+                { $ifNull: ['$expiryDateObj', false] },
+                {
+                  $max: [
+                    0,
+                    {
+                      $ceil: {
+                        $divide: [
+                          { $subtract: ['$expiryDateObj', today] },
+                          1000 * 60 * 60 * 24,
+                        ],
+                      },
+                    },
+                  ],
+                },
+                null,
+              ],
+            },
+          },
+        },
+        {
+          $lookup: {
+            from: 'plans',
+            localField: 'subcategory_id',
+            foreignField: 'course_id',
+            as: 'plans',
+          },
+        },
+        {
+          $addFields: {
+            availablePlans: {
+              $cond: [{ $eq: ['$isEnrolled', false] }, '$plans', []],
+            },
+          },
+        },
+        {
+          $project: {
+            presentation_image: 1,
+            title: 1,
+            about_course: 1,
+            terms_conditions: 1,
+            subcategory_id: 1,
+            categoryId: 1,
+            isEnrolled: 1,
+            enroll_date: '$enrolledDateObj',
+            expiry_date: '$expiryDateObj',
+            remaining_duration: 1,
+            status: '$enrollment.status',
+            availablePlans: 1,
+          },
+        },
+      ]);
+
+      if (data.length > 0) {
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'Subcategories with enrollment details',
+          data,
+        };
+      } else {
+        return {
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'No sub categories found',
+        };
+      }
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message || error,
+      };
+    }
+  }
+
   async getsubcategoryById(req: subCategoryDto) {
     try {
       const findCategory = await this.subCategoryModel.findOne({

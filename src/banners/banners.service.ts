@@ -70,6 +70,70 @@ export class BannersService {
     }
   }
 
+  async editBanner(req: bannerDto, image) {
+    try {
+      if (image) {
+        const reqDoc = image.map((doc, index) => {
+          let IsPrimary = false;
+          if (index == 0) {
+            IsPrimary = true;
+          }
+          const randomNumber = Math.floor(Math.random() * 1000000 + 1);
+          return doc.filename;
+        });
+
+        req.banner_file = reqDoc.toString();
+      }
+      if (req.banner_file) {
+        const editbanner = await this.bannerModel.updateOne(
+          { bannerId: req.bannerId },
+          {
+            $set: {
+              banner_file: req.banner_file,
+              redirect_link: req.redirect_link,
+            },
+          },
+        );
+        if (editbanner.modifiedCount > 0) {
+          return {
+            statusCode: HttpStatus.OK,
+            message: 'Banner edited successfully',
+          };
+        } else {
+          return {
+            statusCode: HttpStatus.EXPECTATION_FAILED,
+            message: 'failed to update',
+          };
+        }
+      } else {
+        const editbanner = await this.bannerModel.updateOne(
+          { bannerId: req.bannerId },
+          {
+            $set: {
+              redirect_link: req.redirect_link,
+            },
+          },
+        );
+        if (editbanner.modifiedCount > 0) {
+          return {
+            statusCode: HttpStatus.OK,
+            message: 'Banner edited successfully',
+          };
+        } else {
+          return {
+            statusCode: HttpStatus.EXPECTATION_FAILED,
+            message: 'failed to update',
+          };
+        }
+      }
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error,
+      };
+    }
+  }
+
   async deleteBanner(req: bannerDto) {
     try {
       const remove = await this.bannerModel.deleteOne({

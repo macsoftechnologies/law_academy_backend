@@ -18,6 +18,7 @@ import { GuestLecturesModule } from './guest_lectures/guest_lectures.module';
 import { LawsModule } from './laws/laws.module';
 import { SubjectsModule } from './subjects/subjects.module';
 import { LecturesModule } from './lectures/lectures.module';
+import { CouponsModule } from './coupons/coupons.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { LecturesModule } from './lectures/lectures.module';
     LawsModule,
     SubjectsModule,
     LecturesModule,
+    CouponsModule,
   ],
   controllers: [AppController],
   providers: [

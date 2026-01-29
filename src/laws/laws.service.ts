@@ -44,12 +44,32 @@ export class LawsService {
   }
 
   async getLaws(page: number, limit: number) {
-    try{
-        const skip = (page - 1) * limit;
+    try {
+      const skip = (page - 1) * limit;
 
       const [getList, totalCount] = await Promise.all([
         this.lawModel.find().skip(skip).limit(limit),
         this.lawModel.countDocuments(),
+      ]);
+      const getlist = await this.lawModel.aggregate([
+        {
+          $lookup: {
+            from: 'subcategories',
+            localField: 'subcategory_id',
+            foreignField: 'subcategory_id',
+            as: 'subcategory_id',
+          },
+        },
+        {
+          $lookup: {
+            from: 'categories',
+            localField: 'categoryId',
+            foreignField: 'categoryId',
+            as: 'categoryId',
+          },
+        },
+        { $skip: skip },
+        { $limit: limit },
       ]);
       return {
         statusCode: HttpStatus.OK,
@@ -58,53 +78,55 @@ export class LawsService {
         currentPage: page,
         totalPages: Math.ceil(totalCount / limit),
         limit,
-        data: getList,
+        data: getlist,
       };
-    } catch(error) {
-        return {
-            statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-            message: error,
-        }
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error,
+      };
     }
   }
 
   async getBySubCategory(req: lawsDto) {
-    try{
-        const list = await this.lawModel.find({subcategory_id: req.subcategory_id});
-        if(list.length > 0) {
-            return {
-                statusCode: HttpStatus.OK,
-                message: "Laws list of subcategory",
-                data: list,
-            }
-        } else {
-            return {
-                statusCode: HttpStatus.NOT_FOUND,
-                message: "Laws not found for this subcategory."
-            }
-        }
-    } catch(error) {
+    try {
+      const list = await this.lawModel.find({
+        subcategory_id: req.subcategory_id,
+      });
+      if (list.length > 0) {
         return {
-            statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-            message: error,
-        }
+          statusCode: HttpStatus.OK,
+          message: 'Laws list of subcategory',
+          data: list,
+        };
+      } else {
+        return {
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'Laws not found for this subcategory.',
+        };
+      }
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error,
+      };
     }
   }
 
   async editLaw(req: lawsDto, image) {
     try {
-        if (image) {
-          const reqDoc = image.map((doc, index) => {
-            let IsPrimary = false;
-            if (index == 0) {
-              IsPrimary = true;
-            }
-            const randomNumber = Math.floor(Math.random() * 1000000 + 1);
-            return doc.filename;
-          });
+      if (image) {
+        const reqDoc = image.map((doc, index) => {
+          let IsPrimary = false;
+          if (index == 0) {
+            IsPrimary = true;
+          }
+          const randomNumber = Math.floor(Math.random() * 1000000 + 1);
+          return doc.filename;
+        });
 
-          req.law_image = reqDoc.toString();
-        }
+        req.law_image = reqDoc.toString();
+      }
       if (req.law_image) {
         const updateLecture = await this.lawModel.updateOne(
           { lawId: req.lawId },
@@ -131,7 +153,7 @@ export class LawsService {
           { lawId: req.lawId },
           {
             $set: {
-              title: req.title
+              title: req.title,
             },
           },
         );

@@ -8,6 +8,8 @@ export class Banner extends Document {
   bannerId: string;
   @Prop()
   banner_file: string;
+  @Prop()
+  redirect_link: string;
 }
 
 export const bannerSchema = SchemaFactory.createForClass(Banner);
