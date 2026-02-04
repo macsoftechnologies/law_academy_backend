@@ -44,6 +44,19 @@ export class AdminController {
     }
   }
 
+  @Post('/superadminforgotpassword')
+  async superAdminForgotPassword(@Body() req: superadminDto) {
+    try {
+      const adminpassword = await this.adminService.superAdminForgotPassword(req);
+      return adminpassword;
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error,
+      };
+    }
+  }
+
   @UseGuards(JwtGuard, RolesGuard)
   @Roles(Role.SUPERADMIN)
   @Post('/register')

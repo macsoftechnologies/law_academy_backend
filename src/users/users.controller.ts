@@ -27,6 +27,7 @@ import { diskStorage } from 'multer';
 import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import { idProofDto } from './dtos/idproofs.dto';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { shippingAdressDto } from './dtos/shipping_address.dto';
 
 @Controller('users')
 export class UsersController {
@@ -333,6 +334,59 @@ export class UsersController {
     try {
       const getdetails = await this.usersService.getUserById(req);
       return getdetails;
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error,
+      };
+    }
+  }
+
+  // shipping address apis
+  @Post('/address')
+  async addUserAddress(@Body() req: shippingAdressDto) {
+    try {
+      const user_address = await this.usersService.addAddress(req);
+      return user_address;
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error,
+      };
+    }
+  }
+
+  @Post('/useraddress')
+  async getUserAddress(@Body() req: shippingAdressDto) {
+    try {
+      const user_address = await this.usersService.userAddresses(req);
+      return user_address;
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error,
+      };
+    }
+  }
+
+  @Post('/updateaddress')
+  async updateAddress(@Body() req: shippingAdressDto) {
+    try {
+      const user_address = await this.usersService.editAddress(req);
+      return user_address;
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error,
+      };
+    }
+  }
+
+  @Post('/deleteaddress')
+  async deleteUserAddress(@Body() req: shippingAdressDto) {
+    try {
+      const user_address = await this.usersService.deleteAddress(req);
+      return user_address;
     } catch (error) {
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,

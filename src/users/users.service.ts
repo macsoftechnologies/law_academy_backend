@@ -19,6 +19,8 @@ import { DetailsUpdateRequest } from './schemas/detailsUpdateRequest.schema';
 import { DetailsRequestStatus } from 'src/auth/guards/roles.enum';
 import { educationalCertificatesDto } from './dtos/educational_certificates.dto';
 import { idProofDto } from './dtos/idproofs.dto';
+import { shippingAdressDto } from './dtos/shipping_address.dto';
+import { ShippingAddress } from './schemas/shipping_address.schema';
 
 @Injectable()
 export class UsersService {
@@ -30,6 +32,8 @@ export class UsersService {
     private readonly idProofsModel: Model<IdProof>,
     @InjectModel(DetailsUpdateRequest.name)
     private readonly deatilsRequestModel: Model<DetailsUpdateRequest>,
+    @InjectModel(ShippingAddress.name)
+    private readonly shippingAddressModel: Model<ShippingAddress>,
     private readonly authService: AuthService,
   ) {}
 
@@ -709,6 +713,112 @@ export class UsersService {
         return {
           statusCode: HttpStatus.NOT_FOUND,
           message: 'User not found',
+        };
+      }
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error,
+      };
+    }
+  }
+
+  // shipping address apis
+  async addAddress(req: shippingAdressDto) {
+    try {
+      const addaddress = await this.shippingAddressModel.create(req);
+      if (addaddress) {
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'Address added successfully',
+          data: addaddress,
+        };
+      } else {
+        return {
+          statusCode: HttpStatus.EXPECTATION_FAILED,
+          message: 'failed to add address',
+        };
+      }
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error,
+      };
+    }
+  }
+
+  async userAddresses(req: shippingAdressDto) {
+    try {
+      const addresses = await this.shippingAddressModel.find({
+        userId: req.userId,
+      });
+      if (addresses.length > 0) {
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'Address of User',
+          data: addresses,
+        };
+      } else {
+        return {
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'not found',
+        };
+      }
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error,
+      };
+    }
+  }
+
+  async editAddress(req: shippingAdressDto) {
+    try {
+      const moderate = await this.shippingAddressModel.updateOne(
+        { address_id: req.address_id },
+        {
+          $set: {
+            full_name: req.full_name,
+            address: req.address,
+            city: req.city,
+            region: req.region,
+            country: req.country,
+          },
+        },
+      );
+      if (moderate.modifiedCount > 0) {
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'Updated successfully',
+        };
+      } else {
+        return {
+          statusCode: HttpStatus.EXPECTATION_FAILED,
+          message: 'failed to update',
+        };
+      }
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error,
+      };
+    }
+  }
+
+  async deleteAddress(req: shippingAdressDto) {
+    try {
+      const removeaddress = await this.shippingAddressModel.deleteOne({
+        address_id: req.address_id,
+      });
+      if (removeaddress) {
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'Address removed successfully',
+        };
+      } else {
+        return {
+          statusCode: HttpStatus.EXPECTATION_FAILED,
+          message: 'failed to delete',
         };
       }
     } catch (error) {

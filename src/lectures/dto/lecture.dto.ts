@@ -14,6 +14,8 @@ export class lectureDto{
     @ApiProperty()
     video_url: string
     @ApiProperty()
+    thumbnail_image_url: string
+    @ApiProperty()
     notes_pdf_url: string
     @ApiProperty()
     subjectId: string
@@ -23,4 +25,8 @@ export class lectureDto{
     subcategory_id: string
     @ApiProperty()
     categoryId: string
+    @ApiProperty()
+    isLocked: boolean
+    @ApiProperty()
+    userId: string
 }

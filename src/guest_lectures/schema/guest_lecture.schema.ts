@@ -20,6 +20,8 @@ export class GuestLecture extends Document{
     video_url: string
     @Prop()
     presentation_image: string
+    @Prop({ default: false })
+    isLocked: boolean
 }
 
 export const guestLectureSchema = SchemaFactory.createForClass(GuestLecture);

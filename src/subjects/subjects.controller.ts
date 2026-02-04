@@ -68,6 +68,19 @@ export class SubjectsController {
     }
   }
 
+  @Post('/listbylawforuser')
+  async getSubjectsByLawForUser(@Body() req: subjectDto) {
+    try{
+      const list = await this.subjectsService.getSubjectsByLawWithuser(req);
+      return list
+    } catch(error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error,
+      }
+    }
+  }
+
   @Post('/update')
   @UseInterceptors(
     AnyFilesInterceptor({

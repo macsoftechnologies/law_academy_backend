@@ -175,4 +175,119 @@ export class EnrollmentsService {
       };
     }
   }
+
+  async userEnrollmentDetails(req: enrollmentDto) {
+    try{
+     const findEnrollment = await this.enrollmentModel.aggregate([
+        {
+          $match: { enroll_id: req.enroll_id },
+        },
+        {
+          $lookup: {
+            from: 'plans',
+            localField: 'planId',
+            foreignField: 'planId',
+            as: 'planId',
+          },
+        },
+        {
+          $lookup: {
+            from: 'subcategories',
+            localField: 'course_id',
+            foreignField: 'subcategory_id',
+            as: 'fullCourse',
+          },
+        },
+        {
+          $lookup: {
+            from: 'subjects',
+            localField: 'course_id',
+            foreignField: 'subjectId',
+            as: 'subjectWise',
+          },
+        },
+        {
+          $lookup: {
+            from: 'mains',
+            localField: 'course_id',
+            foreignField: 'mains_id',
+            as: 'mainsCourse',
+          },
+        },
+        {
+          $lookup: {
+            from: 'notes',
+            localField: 'course_id',
+            foreignField: 'notes_id',
+            as: 'notesCourse',
+          },
+        },
+        {
+          $lookup: {
+            from: 'prelimes',
+            localField: 'course_id',
+            foreignField: 'prelimes_id',
+            as: 'prelimesCourse',
+          },
+        },
+        {
+          $addFields: {
+            courseDetails: {
+              $switch: {
+                branches: [
+                  {
+                    case: { $eq: ['$enroll_type', 'full-course'] },
+                    then: { $arrayElemAt: ['$fullCourse', 0] },
+                  },
+                  {
+                    case: { $eq: ['$enroll_type', 'subject-wise'] },
+                    then: { $arrayElemAt: ['$subjectWise', 0] },
+                  },
+                  {
+                    case: { $eq: ['$enroll_type', 'mains'] },
+                    then: { $arrayElemAt: ['$mainsCourse', 0] },
+                  },
+                  {
+                    case: { $eq: ['$enroll_type', 'notes'] },
+                    then: { $arrayElemAt: ['$notesCourse', 0] },
+                  },
+                  {
+                    case: { $eq: ['$enroll_type', 'prelimes'] },
+                    then: { $arrayElemAt: ['$prelimesCourse', 0] },
+                  },
+                ],
+                default: null,
+              },
+            },
+          },
+        },
+        {
+          $project: {
+            fullCourse: 0,
+            subjectWise: 0,
+            mainsCourse: 0,
+            notesCourse: 0,
+            prelimesCourse: 0,
+          },
+        },
+      ]);
+      if(findEnrollment.length > 0) {
+        return {
+          statusCode: HttpStatus.OK,
+          message: "Enrollment Details",
+          data: findEnrollment
+        }
+      } else {
+        return {
+          statusCode: HttpStatus.NOT_FOUND,
+          message: "Enrollment not found"
+        }
+      }
+    } catch(error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message
+      }
+    }
+  }
 }

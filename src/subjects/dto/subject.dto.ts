@@ -13,4 +13,6 @@ export class subjectDto {
   subcategory_id: string
   @ApiProperty()
   categoryId: string
+  @ApiProperty()
+  userId: string
 }

@@ -12,13 +12,18 @@ export enum DetailsRequestStatus{
 }
 
 export enum ModuleType{
-    COURSE = 'course',
+    COURSE = 'full-course',
     MAINS = 'mains',
     PRELIMS = 'prelims',
     NOTES = 'notes'
 }
 
 export enum enrollmentStatus {
+    ACTIVE = 'active',
+    EXPIRED = 'expired'
+}
+
+export enum couponStatus {
     ACTIVE = 'active',
     EXPIRED = 'expired'
 }

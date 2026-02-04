@@ -17,4 +17,6 @@ export class guestLectureDto{
     video_url: string
     @ApiProperty()
     presentation_image: string
+    @ApiProperty()
+    isLocked: boolean
 }

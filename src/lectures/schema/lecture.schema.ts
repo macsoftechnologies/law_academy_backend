@@ -16,6 +16,8 @@ export class Lecture extends Document {
   @Prop()
   video_url: string;
   @Prop()
+  thumbnail_image_url: string;
+  @Prop()
   notes_pdf_url: string;
   @Prop()
   subjectId: string;
@@ -25,6 +27,8 @@ export class Lecture extends Document {
   subcategory_id: string;
   @Prop()
   categoryId: string;
+  @Prop({default: true})
+  isLocked: boolean
 }
 
 export const lectureSchema = SchemaFactory.createForClass(Lecture);

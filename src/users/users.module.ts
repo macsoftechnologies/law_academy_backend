@@ -11,6 +11,7 @@ import { IdProof, idProofsSchema } from './schemas/idproofs.schema';
 import { DetailsUpdateRequest, detailsUpdateRequestSchema } from './schemas/detailsUpdateRequest.schema';
 import { AuthService } from 'src/auth/auth.service';
 import { JwtService } from '@nestjs/jwt';
+import { ShippingAddress, shippingaddressSchema } from './schemas/shipping_address.schema';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { JwtService } from '@nestjs/jwt';
       },
       { name: IdProof.name, schema: idProofsSchema },
       { name: DetailsUpdateRequest.name, schema: detailsUpdateRequestSchema },
+      { name: ShippingAddress.name, schema: shippingaddressSchema },
     ]),
   ],
   controllers: [UsersController],

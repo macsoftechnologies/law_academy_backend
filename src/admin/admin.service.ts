@@ -96,6 +96,50 @@ export class AdminService {
     }
   }
 
+  async superAdminForgotPassword(req: superadminDto) {
+    try {
+      const findAdmin = await this.superAdminModel.findOne({
+        $or: [{ email: req.email }, { mobile_number: req.mobile_number }],
+      });
+      if (findAdmin) {
+        const bcryptPassword = await this.authService.hashPassword(
+          req.password,
+        );
+        req.password = bcryptPassword;
+        const forgotPassword = await this.superAdminModel.updateOne(
+          { email: findAdmin.email },
+          {
+            $set: {
+              password: req.password,
+            },
+          },
+        );
+        if (forgotPassword) {
+          return {
+            statusCode: HttpStatus.OK,
+            message: 'Password Updated Successfully',
+            data: forgotPassword,
+          };
+        } else {
+          return {
+            statusCode: HttpStatus.EXPECTATION_FAILED,
+            message: 'Password updation failed',
+          };
+        }
+      } else {
+        return {
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'Super-Admin not found',
+        };
+      }
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error,
+      };
+    }
+  }
+
   async createAdmin(req: adminDto) {
     try {
       const findAdmin = await this.adminModel.findOne({

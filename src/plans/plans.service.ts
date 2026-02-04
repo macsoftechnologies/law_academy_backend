@@ -34,12 +34,105 @@ export class PlansService {
   }
 
   async getPlans(page: number, limit: number) {
-    try {
-      const skip = (page - 1) * limit;
-
-      const [getList, totalCount] = await Promise.all([
+    const skip = (page - 1) * limit;
+    const [getList, totalCount] = await Promise.all([
         this.planModel.find().skip(skip).limit(limit),
         this.planModel.countDocuments(),
+      ]);
+    const userplans = await this.planModel.aggregate([
+        // FULL COURSE
+        {
+          $lookup: {
+            from: 'subcategories',
+            localField: 'course_id',
+            foreignField: 'subcategory_id',
+            as: 'fullCourse',
+          },
+        },
+
+        // SUBJECT WISE
+        {
+          $lookup: {
+            from: 'subjects',
+            localField: 'course_id',
+            foreignField: 'subjectId',
+            as: 'subjectWise',
+          },
+        },
+
+        // MAINS
+        {
+          $lookup: {
+            from: 'mains',
+            localField: 'course_id',
+            foreignField: 'mains_id',
+            as: 'mainsCourse',
+          },
+        },
+
+        // NOTES
+        {
+          $lookup: {
+            from: 'notes',
+            localField: 'course_id',
+            foreignField: 'notes_id',
+            as: 'notesCourse',
+          },
+        },
+
+        // PRELIMS
+        {
+          $lookup: {
+            from: 'prelimes',
+            localField: 'course_id',
+            foreignField: 'prelimes_id',
+            as: 'prelimesCourse',
+          },
+        },
+        {
+          $addFields: {
+            courseDetails: {
+              $switch: {
+                branches: [
+                  {
+                    case: { $eq: ['$course_type', 'full-course'] },
+                    then: { $arrayElemAt: ['$fullCourse', 0] },
+                  },
+                  {
+                    case: { $eq: ['$course_type', 'subject-wise'] },
+                    then: { $arrayElemAt: ['$subjectWise', 0] },
+                  },
+                  {
+                    case: { $eq: ['$course_type', 'mains'] },
+                    then: { $arrayElemAt: ['$mainsCourse', 0] },
+                  },
+                  {
+                    case: { $eq: ['$course_type', 'notes'] },
+                    then: { $arrayElemAt: ['$notesCourse', 0] },
+                  },
+                  {
+                    case: { $eq: ['$course_type', 'prelimes'] },
+                    then: { $arrayElemAt: ['$prelimesCourse', 0] },
+                  },
+                ],
+                default: null,
+              },
+            },
+          },
+        },
+
+        // Clean response
+        {
+          $project: {
+            fullCourse: 0,
+            subjectWise: 0,
+            mainsCourse: 0,
+            notesCourse: 0,
+            prelimesCourse: 0,
+          },
+        },
+        { $skip: skip },
+        { $limit: limit },
       ]);
       return {
         statusCode: HttpStatus.OK,
@@ -48,14 +141,8 @@ export class PlansService {
         currentPage: page,
         totalPages: Math.ceil(totalCount / limit),
         limit,
-        data: getList,
+        data: userplans,
       };
-    } catch (error) {
-      return {
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: error,
-      };
-    }
   }
 
   async getPlansByCourse(req: plansDto) {

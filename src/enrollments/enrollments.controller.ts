@@ -31,4 +31,17 @@ export class EnrollmentsController {
       }
     }
   }
+
+  @Post('/details')
+  async enrollmentDetails(@Body() req: enrollmentDto) {
+    try{
+      const details = await this.enrollmentsService.userEnrollmentDetails(req);
+      return details
+    } catch(error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message
+      }
+    }
+  }
 }

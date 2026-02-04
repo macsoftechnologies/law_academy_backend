@@ -49,9 +49,10 @@ export class GuestLecturesController {
   }
 
   @Get('/')
-  async getGuestLectures(@Query('page') page = 1, @Query('limit') limit = 10) {
+  async getGuestLectures(@Query('page') page = 1, @Query('limit') limit = 10, @Query('userId') userId: string) {
     try {
       const list = await this.guestLecturesService.getGuestLecturesList(
+        String(userId),
         Number(page),
         Number(limit),
       );
