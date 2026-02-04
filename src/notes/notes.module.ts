@@ -9,12 +9,14 @@ import {
   Enrollment,
   enrollmentSchema,
 } from 'src/enrollments/schema/enrollment.schema';
+import { PrintedNotesOrder, printedNotesOrderSchema } from './schema/printed_notes_order.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Notes.name, schema: NotesSchema },
       { name: Enrollment.name, schema: enrollmentSchema },
+      { name: PrintedNotesOrder.name, schema: printedNotesOrderSchema },
     ]),
   ],
   controllers: [NotesController],

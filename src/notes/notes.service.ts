@@ -5,6 +5,8 @@ import { Model } from 'mongoose';
 import { notesDto } from './dto/notes.dto';
 import { AuthService } from 'src/auth/auth.service';
 import { Enrollment } from 'src/enrollments/schema/enrollment.schema';
+import { PrintedNotesOrder } from './schema/printed_notes_order.schema';
+import { printedNotesOrderDto } from './dto/printed_notes_order.dto';
 
 @Injectable()
 export class NotesService {
@@ -12,6 +14,8 @@ export class NotesService {
     @InjectModel(Notes.name) private readonly notesModel: Model<Notes>,
     @InjectModel(Enrollment.name)
     private readonly enrollmentModel: Model<Notes>,
+    @InjectModel(PrintedNotesOrder.name)
+    private readonly printedNotesOrderModel: Model<PrintedNotesOrder>,
     private readonly authService: AuthService,
   ) {}
 
@@ -351,6 +355,115 @@ export class NotesService {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error,
       };
+    }
+  }
+
+  async printedNotesOrderAdd(req: printedNotesOrderDto) {
+    try {
+      const addnotes = await this.printedNotesOrderModel.create(req);
+      if (addnotes) {
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'Order added successfully',
+          data: addnotes,
+        };
+      } else {
+        return {
+          statusCode: HttpStatus.EXPECTATION_FAILED,
+          message: 'failed to add',
+        };
+      }
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+      };
+    }
+  }
+
+  async getOrderList(page: number, limit: number) {
+    try {
+      const skip = (page - 1) * limit;
+      const findOrders = await this.printedNotesOrderModel.aggregate([
+        {
+          $lookup: {
+            from: 'notes',
+            localField: 'notes_id',
+            foreignField: 'notes_id',
+            as: 'notes_id',
+          },
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'userId',
+            foreignField: 'userId',
+            as: 'userId',
+          },
+        },
+        {
+          $lookup: {
+            from: 'shippingaddresses',
+            localField: 'address_id',
+            foreignField: 'address_id',
+            as: 'address_id',
+          },
+        },
+        {
+          $lookup: {
+            from: 'coupons',
+            localField: 'coupon_id',
+            foreignField: 'couponId',
+            as: 'coupon_id',
+          },
+        },
+        { $skip: skip },
+        { $limit: limit },
+        { $sort: { createdAt: -1 } },
+      ]);
+      if (findOrders.length > 0) {
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'List of Printed Notes Orders',
+          data: findOrders
+        };
+      } else {
+        return {
+          statusCode: HttpStatus.NOT_FOUND,
+          message: "Orders not found"
+        }
+      }
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+      };
+    }
+  }
+
+  async notesOrderStatusUpdate(req: printedNotesOrderDto) {
+    try{
+      const updateStatus = await this.printedNotesOrderModel.updateOne({order_id: req.order_id},{
+        $set: {
+          status: req.status
+        }
+      });
+      if(updateStatus.modifiedCount > 0) {
+        return {
+          statusCode: HttpStatus.OK,
+          message: "Status Update Successfully",
+        }
+      } else {
+        return {
+          statusCode: HttpStatus.EXPECTATION_FAILED,
+          message: "failed to update status."
+        }
+      }
+    } catch(error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+      }
     }
   }
 }

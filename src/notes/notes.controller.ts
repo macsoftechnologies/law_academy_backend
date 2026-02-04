@@ -11,6 +11,7 @@ import {
 import { NotesService } from './notes.service';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { notesDto } from './dto/notes.dto';
+import { printedNotesOrderDto } from './dto/printed_notes_order.dto';
 
 @Controller('notes')
 export class NotesController {
@@ -89,6 +90,48 @@ export class NotesController {
     try {
       const remove = await this.notesService.deleteNotes(req);
       return remove;
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error,
+      };
+    }
+  }
+
+  @Post('/addorder')
+  async addPrintedNotesOrder(@Body() req: printedNotesOrderDto) {
+    try {
+      const add = await this.notesService.printedNotesOrderAdd(req);
+      return add;
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error,
+      };
+    }
+  }
+
+  @Get('/orders')
+  async getOrdersList(@Query('page') page = 1, @Query('limit') limit = 10) {
+    try{
+      const getlist = await this.notesService.getOrderList(
+        Number(page),
+        Number(limit)
+      );
+      return getlist
+    } catch(error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message
+      }
+    }
+  }
+
+  @Post('/updateorderstatus')
+  async updateOrderStatus(@Body() req: printedNotesOrderDto) {
+    try {
+      const add = await this.notesService.notesOrderStatusUpdate(req);
+      return add;
     } catch (error) {
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,

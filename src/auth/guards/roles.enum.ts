@@ -27,3 +27,10 @@ export enum couponStatus {
     ACTIVE = 'active',
     EXPIRED = 'expired'
 }
+
+export enum orderStatus {
+    PENDING = 'pending',
+    SHIPPED = 'shipped',
+    OUT_FOR_DELIVERY = 'Out for Delivery',
+    DELIVERED = 'delivered'
+}
