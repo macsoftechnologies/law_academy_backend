@@ -34,3 +34,8 @@ export enum orderStatus {
     OUT_FOR_DELIVERY = 'Out for Delivery',
     DELIVERED = 'delivered'
 }
+
+export enum mainsAttemptStatus {
+    PENDING = 'pending',
+    RESULT = 'result'
+}

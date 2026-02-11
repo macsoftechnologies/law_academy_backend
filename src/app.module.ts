@@ -21,6 +21,9 @@ import { LecturesModule } from './lectures/lectures.module';
 import { CouponsModule } from './coupons/coupons.module';
 import { NotesModule } from './notes/notes.module';
 import { SubjectNotesModule } from './subject_notes/subject_notes.module';
+import { PrelimesModule } from './prelimes/prelimes.module';
+import { MainsModule } from './mains/mains.module';
+import { QaModule } from './qa/qa.module';
 
 @Module({
   imports: [
@@ -52,6 +55,9 @@ import { SubjectNotesModule } from './subject_notes/subject_notes.module';
     CouponsModule,
     NotesModule,
     SubjectNotesModule,
+    PrelimesModule,
+    MainsModule,
+    QaModule,
   ],
   controllers: [AppController],
   providers: [
