@@ -13,6 +13,7 @@ import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { prelimesDto } from './dto/prelimes.dto';
+import { mockTestSubjectDto } from './dto/subject-wise-mock-test.dto';
 
 @Controller('prelimes')
 export class PrelimesController {
@@ -122,6 +123,73 @@ export class PrelimesController {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error,
       };
+    }
+  }
+
+  // mock test subjects apis from here
+
+  @Post('/addmocktestsubject')
+  @UseInterceptors(
+    AnyFilesInterceptor({
+      limits: {
+        fileSize: 4 * 1024 * 1024,
+      },
+      storage: diskStorage({
+        destination: './files',
+        filename: (req, file, cb) => {
+          const randomName = Array(32)
+            .fill(null)
+            .map(() => Math.round(Math.random() * 16).toString(16))
+            .join('');
+          cb(null, `${randomName}${extname(file.originalname)}`);
+        },
+      }),
+    }),
+  )
+  async createMockTestSubject(
+    @Body() req: mockTestSubjectDto,
+    @UploadedFiles() image,
+  ) {
+    try {
+      const add = await this.prelimesService.addMockTestSubject(req, image);
+      return add;
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message || 'Internal server error',
+      };
+    }
+  }
+
+  @Get('/mocktestsubjects')
+  async getMockTestSubjectsList(
+    @Query('page') page = 1,
+    @Query('limit') limit = 10,
+  ) {
+    try {
+      const getlist = await this.prelimesService.getMockTestSubjects(
+        Number(page),
+        Number(limit),
+      );
+      return getlist;
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error,
+      };
+    }
+  }
+
+  @Post('/mocktestsubjectdetails')
+  async getMockTestSubjectDetails(@Body() req: mockTestSubjectDto) {
+    try{
+      const details = await this.prelimesService.getMockTestDetails(req);
+      return details
+    } catch(error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+      }
     }
   }
 }

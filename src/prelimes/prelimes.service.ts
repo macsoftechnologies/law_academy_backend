@@ -4,6 +4,9 @@ import { Prelimes } from './schema/prelimes.schema';
 import { Model } from 'mongoose';
 import { prelimesDto } from './dto/prelimes.dto';
 import { Enrollment } from 'src/enrollments/schema/enrollment.schema';
+import { MockTestSubject } from './schema/subject-wise-mock-test.schema';
+import { mockTestSubjectDto } from './dto/subject-wise-mock-test.dto';
+import { duration } from 'moment';
 
 @Injectable()
 export class PrelimesService {
@@ -11,6 +14,8 @@ export class PrelimesService {
     @InjectModel(Prelimes.name) private readonly prelimesModel: Model<Prelimes>,
     @InjectModel(Enrollment.name)
     private readonly enrollmentModel: Model<Enrollment>,
+    @InjectModel(MockTestSubject.name)
+    private readonly mockTestSubjectModel: Model<MockTestSubject>,
   ) {}
 
   async addPrelimes(req: prelimesDto, image) {
@@ -32,7 +37,7 @@ export class PrelimesService {
         : JSON.parse(req.course_points);
       const add = await this.prelimesModel.create({
         ...req,
-        course_points
+        course_points,
       });
       if (add) {
         return {
@@ -360,6 +365,170 @@ export class PrelimesService {
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error,
+      };
+    }
+  }
+
+  // mock test subjects apis from here
+
+  async addMockTestSubject(req: mockTestSubjectDto, image) {
+    try {
+      if (image) {
+        const reqDoc = image.map((doc, index) => {
+          let IsPrimary = false;
+          if (index == 0) {
+            IsPrimary = true;
+          }
+          const randomNumber = Math.floor(Math.random() * 1000000 + 1);
+          return doc.filename;
+        });
+
+        req.presentation_image = reqDoc.toString();
+      }
+      const addSubject = await this.mockTestSubjectModel.create(req);
+      if (addSubject) {
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'Mock Test Subject Added successfully',
+          data: addSubject,
+        };
+      } else {
+        return {
+          statusCode: HttpStatus.EXPECTATION_FAILED,
+          message: 'failed to add',
+        };
+      }
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+      };
+    }
+  }
+
+  async getMockTestSubjects(page: number, limit: number) {
+    try {
+      const skip = (page - 1) * limit;
+      const getsubjects = await this.mockTestSubjectModel.aggregate([
+        { $skip: skip },
+        { $limit: limit },
+        {
+          $lookup: {
+            from: 'laws',
+            localField: 'lawId',
+            foreignField: 'lawId',
+            as: 'lawDetails',
+          },
+        },
+        { $unwind: 'lawDetails' },
+        {
+          $lookup: {
+            from: 'subcategories',
+            localField: '$lawDetails.subcategory_id',
+            foreignField: 'subcategory_id',
+            as: 'CourseDetails',
+          },
+        },
+        { $unwind: 'CourseDetails' },
+        {
+          $project: {
+            mocktest_subject_id: 1,
+            presentation_image: 1,
+            title: 1,
+            no_of_qos: 1,
+            duration: 1,
+            law: {
+              lawId: '$lawDetails.lawId',
+              title: '$lawDetails.title',
+            },
+            course: {
+              subcategory_id: '$CourseDetails.subcategory_id',
+              title: '$CourseDetails.title',
+            },
+          },
+        },
+      ]);
+      const totalCount = await this.mockTestSubjectModel.countDocuments();
+      if (getsubjects.length > 0) {
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'List of Mock Test Subjects',
+          totalCount,
+          currentPage: page,
+          totalPages: Math.ceil(totalCount / limit),
+          limit,
+          data: getsubjects,
+        };
+      } else {
+        return {
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'Mock Test Subjects Not found',
+        };
+      }
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+      };
+    }
+  }
+
+  async getMockTestDetails(req: mockTestSubjectDto) {
+    try {
+      const details = await this.mockTestSubjectModel.aggregate([
+        { $match: { mocktest_subject_id: req.mocktest_subject_id } },
+        {
+          $lookup: {
+            from: 'laws',
+            localField: 'lawId',
+            foreignField: 'lawId',
+            as: 'lawDetails',
+          },
+        },
+        { $unwind: 'lawDetails' },
+        {
+          $lookup: {
+            from: 'subcategories',
+            localField: '$lawDetails.subcategory_id',
+            foreignField: 'subcategory_id',
+            as: 'CourseDetails',
+          },
+        },
+        { $unwind: 'CourseDetails' },
+        {
+          $project: {
+            mocktest_subject_id: 1,
+            presentation_image: 1,
+            title: 1,
+            no_of_qos: 1,
+            duration: 1,
+            law: {
+              lawId: '$lawDetails.lawId',
+              title: '$lawDetails.title',
+            },
+            course: {
+              subcategory_id: '$CourseDetails.subcategory_id',
+              title: '$CourseDetails.title',
+            },
+          },
+        },
+      ]);
+      if (details.length > 0) {
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'Details of Mock Test Subject',
+          data: details,
+        };
+      } else {
+        return {
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'Mock Test Details not found',
+        };
+      }
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
       };
     }
   }

@@ -835,7 +835,7 @@ export class MainsService {
             as: "result",
           }
         },
-        { $unwind: '$result' },
+        { $unwind: { path: '$result', preserveNullAndEmptyArrays: true } },
         {
           $lookup: {
             from: 'users',
@@ -844,7 +844,7 @@ export class MainsService {
             as: 'user',
           },
         },
-        { $unwind: '$user' },
+        { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
         {
           $lookup: {
             from: 'mainssubjecttests',
@@ -853,7 +853,7 @@ export class MainsService {
             as: 'subject',
           },
         },
-        { $unwind: '$subject' },
+        { $unwind: { path: '$subject', preserveNullAndEmptyArrays: true } },
         {
           $lookup: {
             from: 'mainstests',
@@ -862,7 +862,7 @@ export class MainsService {
             as: 'mainsTest',
           },
         },
-        { $unwind: '$mainsTest' },
+        { $unwind: { path: '$mainsTest', preserveNullAndEmptyArrays: true } },
         {
           $project: {
             mains_attempt_id: 1,
