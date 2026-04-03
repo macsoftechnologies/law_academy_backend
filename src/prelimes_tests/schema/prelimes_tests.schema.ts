@@ -3,11 +3,15 @@ import { Document } from 'mongoose';
 import { v4 as uuid } from 'uuid/dist/index.js';
 
 @Schema({ timestamps: true })
-export class MockTestSubject extends Document {
+export class PrelimesTest extends Document {
   @Prop({ default: uuid })
-  mocktest_subject_id: string;
+  prelimes_test_id: string;
   @Prop()
-  presentation_image: string;
+  prelimes_id: string;
+  @Prop()
+  test_type: string;
+  @Prop()
+  test_number: string;
   @Prop()
   title: string;
   @Prop()
@@ -15,10 +19,7 @@ export class MockTestSubject extends Document {
   @Prop()
   duration: string;
   @Prop()
-  lawId: string;
-  @Prop()
-  prelimes_id: string;
+  mocktest_subject_id: string;
 }
 
-export const mockTestSubjectSchema =
-  SchemaFactory.createForClass(MockTestSubject);
+export const prelimesTestSchema = SchemaFactory.createForClass(PrelimesTest);

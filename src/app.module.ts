@@ -24,6 +24,8 @@ import { SubjectNotesModule } from './subject_notes/subject_notes.module';
 import { PrelimesModule } from './prelimes/prelimes.module';
 import { MainsModule } from './mains/mains.module';
 import { QaModule } from './qa/qa.module';
+import { PrelimesTestsModule } from './prelimes_tests/prelimes_tests.module';
+import { TestTermsModule } from './test_terms/test_terms.module';
 
 @Module({
   imports: [
@@ -58,6 +60,8 @@ import { QaModule } from './qa/qa.module';
     PrelimesModule,
     MainsModule,
     QaModule,
+    PrelimesTestsModule,
+    TestTermsModule,
   ],
   controllers: [AppController],
   providers: [

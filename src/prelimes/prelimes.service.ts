@@ -410,8 +410,6 @@ export class PrelimesService {
     try {
       const skip = (page - 1) * limit;
       const getsubjects = await this.mockTestSubjectModel.aggregate([
-        { $skip: skip },
-        { $limit: limit },
         {
           $lookup: {
             from: 'laws',
@@ -420,16 +418,45 @@ export class PrelimesService {
             as: 'lawDetails',
           },
         },
-        { $unwind: 'lawDetails' },
+        {
+          $unwind: {
+            path: '$lawDetails',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $lookup: {
+            from: 'prelimes',
+            localField: 'prelimes_id',
+            foreignField: 'prelimes_id',
+            as: 'prelimesDetails',
+          },
+        },
+        {
+          $unwind: {
+            path: '$prelimesDetails',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $addFields: {
+            lawSubcategoryId: '$lawDetails.subcategory_id',
+          },
+        },
         {
           $lookup: {
             from: 'subcategories',
-            localField: '$lawDetails.subcategory_id',
+            localField: 'lawSubcategoryId',
             foreignField: 'subcategory_id',
             as: 'CourseDetails',
           },
         },
-        { $unwind: 'CourseDetails' },
+        {
+          $unwind: {
+            path: '$CourseDetails',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
         {
           $project: {
             mocktest_subject_id: 1,
@@ -437,6 +464,10 @@ export class PrelimesService {
             title: 1,
             no_of_qos: 1,
             duration: 1,
+            prelimes: {
+              prelimes_id: '$prelimesDetails.prelimes_id',
+              title: '$prelimesDetails.title',
+            },
             law: {
               lawId: '$lawDetails.lawId',
               title: '$lawDetails.title',
@@ -447,7 +478,10 @@ export class PrelimesService {
             },
           },
         },
+        { $skip: skip },
+        { $limit: limit },
       ]);
+      console.log('subjectmocktestsList....', getsubjects);
       const totalCount = await this.mockTestSubjectModel.countDocuments();
       if (getsubjects.length > 0) {
         return {
@@ -485,16 +519,45 @@ export class PrelimesService {
             as: 'lawDetails',
           },
         },
-        { $unwind: 'lawDetails' },
+        {
+          $unwind: {
+            path: '$lawDetails',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $lookup: {
+            from: 'prelimes',
+            localField: 'prelimes_id',
+            foreignField: 'prelimes_id',
+            as: 'prelimesDetails',
+          },
+        },
+        {
+          $unwind: {
+            path: '$prelimesDetails',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $addFields: {
+            lawSubcategoryId: '$lawDetails.subcategory_id',
+          },
+        },
         {
           $lookup: {
             from: 'subcategories',
-            localField: '$lawDetails.subcategory_id',
+            localField: 'lawSubcategoryId',
             foreignField: 'subcategory_id',
             as: 'CourseDetails',
           },
         },
-        { $unwind: 'CourseDetails' },
+        {
+          $unwind: {
+            path: '$CourseDetails',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
         {
           $project: {
             mocktest_subject_id: 1,
@@ -502,6 +565,10 @@ export class PrelimesService {
             title: 1,
             no_of_qos: 1,
             duration: 1,
+            prelimes: {
+              prelimes_id: '$prelimesDetails.prelimes_id',
+              title: '$prelimesDetails.title',
+            },
             law: {
               lawId: '$lawDetails.lawId',
               title: '$lawDetails.title',
@@ -529,6 +596,127 @@ export class PrelimesService {
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error.message,
+      };
+    }
+  }
+
+  async getMockTestBasedOnLaw(req: mockTestSubjectDto) {
+    try {
+      const getLawMockTests = await this.mockTestSubjectModel.find({
+        lawId: req.lawId,
+      });
+      if (getLawMockTests.length > 0) {
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'List of Subject Wise Mock Test By Law',
+          data: getLawMockTests,
+        };
+      } else {
+        return {
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'No Subject Wise Mock Tests Found.',
+        };
+      }
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+      };
+    }
+  }
+
+  async editMockTest(req: mockTestSubjectDto, image) {
+    try {
+      if (image) {
+        const reqDoc = image.map((doc, index) => {
+          let IsPrimary = false;
+          if (index == 0) {
+            IsPrimary = true;
+          }
+          const randomNumber = Math.floor(Math.random() * 1000000 + 1);
+          return doc.filename;
+        });
+
+        req.presentation_image = reqDoc.toString();
+      }
+      if (req.presentation_image) {
+        const updateLecture = await this.mockTestSubjectModel.updateOne(
+          { mocktest_subject_id: req.mocktest_subject_id },
+          {
+            $set: {
+              presentation_image: req.presentation_image,
+              title: req.title,
+              no_of_qos: req.no_of_qos,
+              duration: req.duration,
+              lawId: req.lawId,
+              prelimes_id: req.prelimes_id,
+            },
+          },
+        );
+        if (updateLecture.modifiedCount > 0) {
+          return {
+            statusCode: HttpStatus.OK,
+            message: 'Subject Mock Test Updated Successfully',
+          };
+        } else {
+          return {
+            statusCode: HttpStatus.EXPECTATION_FAILED,
+            message: 'Failed to update.',
+          };
+        }
+      } else {
+        const updateLecture = await this.mockTestSubjectModel.updateOne(
+          { mocktest_subject_id: req.mocktest_subject_id },
+          {
+            $set: {
+              title: req.title,
+              no_of_qos: req.no_of_qos,
+              duration: req.duration,
+              lawId: req.lawId,
+              prelimes_id: req.prelimes_id,
+            },
+          },
+        );
+        if (updateLecture.modifiedCount > 0) {
+          return {
+            statusCode: HttpStatus.OK,
+            message: 'Subject Mock Test Updated Successfully',
+          };
+        } else {
+          return {
+            statusCode: HttpStatus.EXPECTATION_FAILED,
+            message: 'Failed to update.',
+          };
+        }
+      }
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error,
+      };
+    }
+  }
+
+  async deleteSubjectMockTest(req: mockTestSubjectDto) {
+    try {
+      const remove = await this.mockTestSubjectModel.deleteOne({
+        mocktest_subject_id: req.mocktest_subject_id,
+      });
+      if (remove) {
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'Subject Mock Test has been removed successfully',
+        };
+      } else {
+        return {
+          statusCode: HttpStatus.EXPECTATION_FAILED,
+          message: 'Failed to delete Subject Mock Test.',
+        };
+      }
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error,
       };
     }
   }

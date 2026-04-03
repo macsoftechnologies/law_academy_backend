@@ -101,7 +101,7 @@ export class UsersService {
       if (!findUser) {
         return {
           statusCode: HttpStatus.NOT_FOUND,
-          message: 'Super Admin Not Found',
+          message: 'User Not Found',
         };
       } else {
         const matchPassword = await this.authService.comparePassword(

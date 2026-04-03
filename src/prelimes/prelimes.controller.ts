@@ -182,14 +182,70 @@ export class PrelimesController {
 
   @Post('/mocktestsubjectdetails')
   async getMockTestSubjectDetails(@Body() req: mockTestSubjectDto) {
-    try{
+    try {
       const details = await this.prelimesService.getMockTestDetails(req);
-      return details
-    } catch(error) {
+      return details;
+    } catch (error) {
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error.message,
-      }
+      };
     }
   }
+
+  @Post('/subjectmocktestbylaw')
+  async getMockTestSubjectByLaw(@Body() req: mockTestSubjectDto) {
+    try {
+      const details = await this.prelimesService.getMockTestBasedOnLaw(req);
+      return details;
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+      };
+    }
+  }
+
+  @Post('/update_mock_test')
+  @UseInterceptors(
+    AnyFilesInterceptor({
+      limits: {
+        fileSize: 4 * 1024 * 1024,
+      },
+      storage: diskStorage({
+        destination: './files',
+        filename: (req, file, cb) => {
+          const randomName = Array(32)
+            .fill(null)
+            .map(() => Math.round(Math.random() * 16).toString(16))
+            .join('');
+          cb(null, `${randomName}${extname(file.originalname)}`);
+        },
+      }),
+    }),
+  )
+  async updateSubjectMockTest(@Body() req: mockTestSubjectDto, @UploadedFiles() image) {
+    try {
+      const modify = await this.prelimesService.editMockTest(req, image);
+      return modify;
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error,
+      };
+    }
+  }
+
+  @Post('/delete_subject_mock_test')
+  async removeSubjectMockTest(@Body() req: mockTestSubjectDto) {
+    try {
+      const remove = await this.prelimesService.deleteSubjectMockTest(req);
+      return remove;
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error,
+      };
+    }
+  }  
 }

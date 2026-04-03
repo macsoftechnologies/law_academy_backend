@@ -1,10 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-export class mockTestSubjectDto {
+export class prelimesTestDto {
   @ApiProperty()
-  mocktest_subject_id: string;
+  prelimes_test_id: string;
   @ApiProperty()
-  presentation_image: string;
+  prelimes_id: string;
+  @ApiProperty()
+  test_type: string;
+  @ApiProperty()
+  test_number: string;
   @ApiProperty()
   title: string;
   @ApiProperty()
@@ -12,7 +16,5 @@ export class mockTestSubjectDto {
   @ApiProperty()
   duration: string;
   @ApiProperty()
-  lawId: string;
-  @ApiProperty()
-  prelimes_id: string;
+  mocktest_subject_id: string;
 }

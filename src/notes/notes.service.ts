@@ -200,6 +200,7 @@ export class NotesService {
             title: 1,
             sub_title: 1,
             presentation_image: 1,
+            printNotes_image: 1,
             notes_id: 1,
             subcategory_id: 1,
 
