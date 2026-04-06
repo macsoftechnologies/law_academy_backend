@@ -73,20 +73,13 @@ export class PrelimesTestsService {
         };
       }
 
-      if (test_type === 'SMT' && !mocktest_subject_id) {
-        return {
-          statusCode: HttpStatus.BAD_REQUEST,
-          message: 'mocktest_subject_id is required when test_type is SMT',
-        };
-      }
-
       const pageNumber = page || 1;
       const pageLimit = limit || 10;
       const skip = (pageNumber - 1) * pageLimit;
 
       const matchStage: any = { test_type };
 
-      if (test_type === 'SMT') {
+      if (test_type === 'SMT' && mocktest_subject_id ) {
         matchStage.mocktest_subject_id = mocktest_subject_id;
       }
 
