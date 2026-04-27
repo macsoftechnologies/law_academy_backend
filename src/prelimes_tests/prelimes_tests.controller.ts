@@ -151,6 +151,19 @@ export class PrelimesTestsController {
     return this.prelimesTestsService.submitAttempt(id);
   }
 
+  @Get('/attempts')
+  getAttempts(
+    @Query('page') page = 1,
+    @Query('limit') limit = 10,
+    @Query('test_type') test_type: string,
+  ) {
+    return this.prelimesTestsService.getAttemptsList(
+      Number(page),
+      Number(limit),
+      test_type,
+    );
+  }
+
   @Get(':id')
   get(@Param('id') id: string) {
     return this.prelimesTestsService.getAttempt(id);

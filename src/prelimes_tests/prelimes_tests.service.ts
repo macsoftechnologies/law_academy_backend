@@ -358,7 +358,7 @@ export class PrelimesTestsService {
   }
 
   async saveAnswer(attemptId: string, dto: any) {
-    const attempt = await this.attemptModel.findOne({prelimes_attempt_id: attemptId});
+    const attempt = await this.attemptModel.findOne({ prelimes_attempt_id: attemptId });
 
     if (!attempt) {
       return { statusCode: 404, message: 'Attempt not found' };
@@ -390,7 +390,7 @@ export class PrelimesTestsService {
   }
 
   async submitAttempt(prelimes_attempt_id: string) {
-    const attempt = await this.attemptModel.findOne({prelimes_attempt_id: prelimes_attempt_id});
+    const attempt = await this.attemptModel.findOne({ prelimes_attempt_id: prelimes_attempt_id });
 
     if (!attempt) {
       return { statusCode: 404, message: 'Attempt not found' };
@@ -401,8 +401,8 @@ export class PrelimesTestsService {
     }
 
     attempt.submittedAt = new Date();
-    
-    const test = await this.prelimesTestModel.findOne({prelimes_test_id: attempt.testId});
+
+    const test = await this.prelimesTestModel.findOne({ prelimes_test_id: attempt.testId });
     const testDuration = parseInt(test?.duration ?? '0');
 
     const questions = await this.prelimesQuestionModel.find({
@@ -507,8 +507,82 @@ export class PrelimesTestsService {
     };
   }
 
+  async getAttemptsList(page: number, limit: number, test_type: string) {
+    try {
+      const skip = (page - 1) * limit;
+
+      const [aggregationResult] = await this.attemptModel.aggregate([
+        {
+          $lookup: {
+            from: "prelimestests",
+            localField: "testId",
+            foreignField: "prelimes_test_id",
+            as: "testId"
+          }
+        },
+        {
+          $unwind: {
+            path: '$testId',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        { $match: { 'testId.test_type': test_type } },
+        {
+          $lookup: {
+            from: "users",
+            localField: "userId",
+            foreignField: "userId",
+            as: "userId"
+          }
+        },
+        {
+          $unwind: {
+            path: '$userId',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $lookup: {
+            from: "prelimesresults",
+            localField: "prelimes_attempt_id",
+            foreignField: "attemptId",
+            as: "result"
+          }
+        },
+        {
+          $unwind: {
+            path: '$result',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $facet: {
+            data: [{ $skip: skip }, { $limit: limit }],
+            total: [{ $count: 'count' }],
+          },
+        },
+      ]);
+      const data = aggregationResult?.data ?? [];
+      const total = aggregationResult?.total[0]?.count ?? 0;
+      return {
+        statusCode: HttpStatus.OK,
+        message: `List of Attempts by ${test_type}`,
+        totalCount: total,
+        currentPage: page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        data,
+      }
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+      };
+    }
+  }
+
   async getAttempt(prelimes_attempt_id: string) {
-    const attempt = await this.resultModel.findOne({attemptId: prelimes_attempt_id});
+    const attempt = await this.resultModel.findOne({ attemptId: prelimes_attempt_id });
 
     return {
       statusCode: 200,
