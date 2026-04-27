@@ -1,11 +1,11 @@
-import { Body, Controller, Get, HttpStatus, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpStatus, Param, Post, Query } from '@nestjs/common';
 import { PrelimesTestsService } from './prelimes_tests.service';
 import { prelimesTestDto } from './dto/prelimes_tests.dto';
 import { prelimesQuestionDto } from './dto/prelimes_questions.dto';
 
 @Controller('prelimes-tests')
 export class PrelimesTestsController {
-  constructor(private readonly prelimesTestsService: PrelimesTestsService) {}
+  constructor(private readonly prelimesTestsService: PrelimesTestsService) { }
 
   // Prelimes Test Apis
 
@@ -134,5 +134,25 @@ export class PrelimesTestsController {
         message: error.message,
       };
     }
+  }
+
+  @Post('start_attempt')
+  start(@Body() body: any) {
+    return this.prelimesTestsService.startAttempt(body);
+  }
+
+  @Post(':id/answer')
+  saveAnswer(@Param('id') id: string, @Body() body: any) {
+    return this.prelimesTestsService.saveAnswer(id, body);
+  }
+
+  @Post(':id/submit')
+  submit(@Param('id') id: string) {
+    return this.prelimesTestsService.submitAttempt(id);
+  }
+
+  @Get(':id')
+  get(@Param('id') id: string) {
+    return this.prelimesTestsService.getAttempt(id);
   }
 }

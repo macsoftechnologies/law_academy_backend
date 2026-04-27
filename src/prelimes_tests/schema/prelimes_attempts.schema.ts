@@ -14,18 +14,25 @@ export class PrelimesAttempt extends Document {
 
   @Prop([
     {
-      questionId: String,
-      selectedAnswer: Number,
-      isCorrect: Boolean,
+      questionId: { type: String },
+      selectedAnswer: { type: Number, default: null },
+      isCorrect: { type: Boolean, default: false },
     },
   ])
-  answers: any[];
+  answers: {
+    questionId: string;
+    selectedAnswer: number;
+    isCorrect: boolean;
+  }[];
 
   @Prop()
   startedAt: Date;
 
   @Prop()
   submittedAt: Date;
+
+  @Prop()
+  attemptNumber: number;
 }
 
 export const prelimesAttemptSchema =

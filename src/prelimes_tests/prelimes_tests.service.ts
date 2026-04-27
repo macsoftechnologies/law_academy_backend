@@ -13,13 +13,13 @@ export class PrelimesTestsService {
   constructor(
     @InjectModel(PrelimesTest.name)
     private readonly prelimesTestModel: Model<PrelimesTest>,
-    @InjectModel(PrelimesTest.name)
-    private readonly prelimesAttemptModel: Model<PrelimesAttempt>,
     @InjectModel(PrelimesQuestion.name)
     private readonly prelimesQuestionModel: Model<PrelimesQuestion>,
-    @InjectModel(PrelimesTest.name)
-    private readonly prelimesResultModel: Model<PrelimesResults>,
-  ) {}
+    @InjectModel(PrelimesAttempt.name)
+    private readonly attemptModel: Model<PrelimesAttempt>,
+    @InjectModel(PrelimesResults.name)
+    private readonly resultModel: Model<PrelimesResults>,
+  ) { }
 
   // Prelimes test APIs
 
@@ -79,7 +79,7 @@ export class PrelimesTestsService {
 
       const matchStage: any = { test_type };
 
-      if (test_type === 'SMT' && mocktest_subject_id ) {
+      if (test_type === 'SMT' && mocktest_subject_id) {
         matchStage.mocktest_subject_id = mocktest_subject_id;
       }
 
@@ -89,32 +89,32 @@ export class PrelimesTestsService {
 
       const lookupStage = userId
         ? [
-            {
-              $lookup: {
-                from: 'prelimes_attempts',
-                let: { testId: '$prelimes_test_id' },
-                pipeline: [
-                  {
-                    $match: {
-                      $expr: {
-                        $and: [
-                          { $eq: ['$prelimes_test_id', '$$testId'] },
-                          { $eq: ['$userId', userId] },
-                        ],
-                      },
+          {
+            $lookup: {
+              from: 'prelimes_attempts',
+              let: { testId: '$prelimes_test_id' },
+              pipeline: [
+                {
+                  $match: {
+                    $expr: {
+                      $and: [
+                        { $eq: ['$prelimes_test_id', '$$testId'] },
+                        { $eq: ['$userId', userId] },
+                      ],
                     },
                   },
-                ],
-                as: 'attempts',
-              },
+                },
+              ],
+              as: 'attempts',
             },
-            {
-              $addFields: {
-                attempts_count: { $size: '$attempts' },
-              },
+          },
+          {
+            $addFields: {
+              attempts_count: { $size: '$attempts' },
             },
-            { $project: { attempts: 0 } },
-          ]
+          },
+          { $project: { attempts: 0 } },
+        ]
         : [];
 
       const pipeline = [
@@ -331,5 +331,188 @@ export class PrelimesTestsService {
         message: error.message,
       };
     }
+  }
+
+  // attempts apis
+
+
+  async startAttempt(dto: { userId: string; testId: string }) {
+    const count = await this.attemptModel.countDocuments({
+      userId: dto.userId,
+      testId: dto.testId,
+    });
+
+    const attempt = await this.attemptModel.create({
+      userId: dto.userId,
+      testId: dto.testId,
+      attemptNumber: count + 1, // 🔥 KEY
+      answers: [],
+      startedAt: new Date(),
+    });
+
+    return {
+      statusCode: 200,
+      message: 'Attempt started',
+      data: attempt,
+    };
+  }
+
+  async saveAnswer(attemptId: string, dto: any) {
+    const attempt = await this.attemptModel.findOne({prelimes_attempt_id: attemptId});
+
+    if (!attempt) {
+      return { statusCode: 404, message: 'Attempt not found' };
+    }
+
+    const existingIndex = attempt.answers.findIndex(
+      (a) => a.questionId === dto.questionId,
+    );
+
+    if (existingIndex > -1) {
+      // 🔥 UPDATE EXISTING ANSWER
+      attempt.answers[existingIndex].selectedAnswer = dto.selectedAnswer;
+    } else {
+      // ➕ ADD NEW ANSWER
+      attempt.answers.push({
+        questionId: dto.questionId,
+        selectedAnswer: dto.selectedAnswer,
+        isCorrect: false,
+      });
+    }
+
+    await attempt.save();
+
+    return {
+      statusCode: 200,
+      message: 'Answer saved',
+      data: attempt,
+    };
+  }
+
+  async submitAttempt(prelimes_attempt_id: string) {
+    const attempt = await this.attemptModel.findOne({prelimes_attempt_id: prelimes_attempt_id});
+
+    if (!attempt) {
+      return { statusCode: 404, message: 'Attempt not found' };
+    }
+
+    if (attempt.submittedAt) {
+      return { statusCode: 400, message: 'Already submitted' };
+    }
+
+    attempt.submittedAt = new Date();
+    
+    const test = await this.prelimesTestModel.findOne({prelimes_test_id: attempt.testId});
+    const testDuration = parseInt(test?.duration ?? '0');
+
+    const questions = await this.prelimesQuestionModel.find({
+      prelimes_test_id: attempt.testId,
+    });
+
+    const qMap = new Map(questions.map(q => [q.questionId, q]));
+
+    const answerMap = new Map();
+    for (const ans of attempt.answers || []) {
+      answerMap.set(ans.questionId, ans);
+    }
+
+    let correct = 0;
+    let wrong = 0;
+    let skipped = 0;
+    let attempted = 0;
+
+    for (const q of questions) {
+      const ans = answerMap.get(q.questionId);
+
+      if (!ans || ans.selectedAnswer == null) {
+        skipped++;
+        continue;
+      }
+
+      attempted++;
+
+      if (ans.selectedAnswer === q.correctAnswer) {
+        correct++;
+      } else {
+        wrong++;
+      }
+    }
+
+    const totalQuestions = questions.length;
+    const score = correct;
+
+    const accuracy = attempted
+      ? (correct / attempted) * 100
+      : 0;
+
+    const percentage = (score / totalQuestions) * 100;
+
+    const timeSpent =
+      (attempt.submittedAt.getTime() - attempt.startedAt.getTime()) / 1000;
+
+    await attempt.save();
+
+    const result = await this.resultModel.create({
+      userId: attempt.userId,
+      testId: attempt.testId,
+      attemptId: attempt.prelimes_attempt_id,
+      totalQuestions,
+      attempted,
+      correct,
+      wrong,
+      skipped,
+      score,
+      percentage,
+      accuracy,
+      timeSpent,
+      totalTime: testDuration
+    });
+
+    const betterScores = await this.resultModel.countDocuments({
+      testId: attempt.testId,
+      score: { $gt: score },
+    });
+
+    const totalParticipants = await this.resultModel.countDocuments({
+      testId: attempt.testId,
+    });
+
+    const rank = betterScores + 1;
+
+    const percentile =
+      totalParticipants > 0
+        ? (1 - rank / totalParticipants) * 100
+        : 0;
+
+    result.rank = rank;
+    result.totalParticipants = totalParticipants;
+    result.percentile = Number(percentile.toFixed(1));
+
+    await result.save();
+
+    return {
+      statusCode: 200,
+      message: 'Submitted successfully',
+      data: {
+        score,
+        totalQuestions,
+        timeSpent,
+        totalTime: result.totalTime,
+        rank,
+        totalParticipants,
+        percentile: result.percentile,
+        accuracy: Number(accuracy.toFixed(1)),
+        attemptNumber: attempt.attemptNumber,
+      },
+    };
+  }
+
+  async getAttempt(prelimes_attempt_id: string) {
+    const attempt = await this.resultModel.findOne({attemptId: prelimes_attempt_id});
+
+    return {
+      statusCode: 200,
+      data: attempt,
+    };
   }
 }
