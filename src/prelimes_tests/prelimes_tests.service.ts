@@ -526,7 +526,7 @@ export class PrelimesTestsService {
             preserveNullAndEmptyArrays: true,
           },
         },
-        { $match: { 'testId.test_type': test_type } },
+        ...(test_type ? [{ $match: { 'testId.test_type': test_type } }] : []),
         {
           $lookup: {
             from: "users",
