@@ -529,6 +529,14 @@ export class PrelimesTestsService {
         ...(test_type ? [{ $match: { 'testId.test_type': test_type } }] : []),
         {
           $lookup: {
+            from: 'prelimesquestions',
+            localField: 'testId.prelimes_test_id',
+            foreignField: 'prelimes_test_id',
+            as: 'questions',
+          },
+        },
+        {
+          $lookup: {
             from: "users",
             localField: "userId",
             foreignField: "userId",
@@ -556,6 +564,16 @@ export class PrelimesTestsService {
           },
         },
         {
+          $addFields: {
+            questions: {
+              $sortArray: {
+                input: '$questions',
+                sortBy: { question_number: 1 },
+              },
+            },
+          },
+        },
+        {
           $facet: {
             data: [{ $skip: skip }, { $limit: limit }],
             total: [{ $count: 'count' }],
@@ -566,7 +584,7 @@ export class PrelimesTestsService {
       const total = aggregationResult?.total[0]?.count ?? 0;
       return {
         statusCode: HttpStatus.OK,
-        message: `List of Attempts by ${test_type}`,
+        message: test_type ? `List of Attempts by ${test_type}` : 'List of all Attempts',
         totalCount: total,
         currentPage: page,
         limit,
