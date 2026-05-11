@@ -7,6 +7,7 @@ import { PrelimesAttempt } from './schema/prelimes_attempts.schema';
 import { PrelimesQuestion } from './schema/prelimes_questions.schema';
 import { PrelimesResults } from './schema/prelimes_results.schema';
 import { prelimesQuestionDto } from './dto/prelimes_questions.dto';
+import { StartAttemptDto } from './dto/prelimes_attempts.dto';
 
 @Injectable()
 export class PrelimesTestsService {
@@ -606,5 +607,92 @@ export class PrelimesTestsService {
       statusCode: 200,
       data: attempt,
     };
+  }
+
+  async getUserTestAttempts(req: StartAttemptDto) {
+    try {
+      const [aggregationResult] = await this.attemptModel.aggregate([
+        {
+          $match: {
+            testId: req.testId,
+            userId: req.userId,
+          },
+        },
+        {
+          $lookup: {
+            from: 'prelimestests',
+            localField: 'testId',
+            foreignField: 'prelimes_test_id',
+            as: 'testInfo',
+          },
+        },
+        {
+          $unwind: {
+            path: '$testInfo',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $lookup: {
+            from: 'prelimesquestions',
+            localField: 'testId',
+            foreignField: 'prelimes_test_id',
+            as: 'questions',
+          },
+        },
+        {
+          $lookup: {
+            from: 'prelimesresults',
+            localField: 'prelimes_attempt_id',
+            foreignField: 'attemptId',
+            as: 'result',
+          },
+        },
+        {
+          $unwind: {
+            path: '$result',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $addFields: {
+            questions: {
+              $sortArray: {
+                input: '$questions',
+                sortBy: { question_number: 1 },
+              },
+            },
+          },
+        },
+        {
+          $facet: {
+            data: [
+              { $sort: { 'attempNumber': 1 } },
+            ],
+            total: [{ $count: 'count' }],
+          },
+        },
+      ]);
+
+      const data = aggregationResult?.data ?? [];
+      if (data.length > 0) {
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'User test attempts fetched successfully',
+          data,
+        };
+      } else {
+        return {
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'No attempts found for this test',
+          data,
+        };
+      }
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+      };
+    }
   }
 }

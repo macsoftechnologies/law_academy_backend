@@ -2,6 +2,7 @@ import { Body, Controller, Get, HttpStatus, Param, Post, Query } from '@nestjs/c
 import { PrelimesTestsService } from './prelimes_tests.service';
 import { prelimesTestDto } from './dto/prelimes_tests.dto';
 import { prelimesQuestionDto } from './dto/prelimes_questions.dto';
+import { StartAttemptDto } from './dto/prelimes_attempts.dto';
 
 @Controller('prelimes-tests')
 export class PrelimesTestsController {
@@ -167,5 +168,10 @@ export class PrelimesTestsController {
   @Get(':id')
   get(@Param('id') id: string) {
     return this.prelimesTestsService.getAttempt(id);
+  }
+
+  @Post('/user_attempts')
+  getUserAtetmpts(@Body() req: StartAttemptDto) {
+    return this.prelimesTestsService.getUserTestAttempts(req);
   }
 }
