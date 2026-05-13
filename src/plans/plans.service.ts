@@ -89,6 +89,15 @@ export class PlansService {
             as: 'prelimesCourse',
           },
         },
+        // Combinations
+        {
+          $lookup: {
+            from: 'combos',
+            localField: 'course_id',
+            foreignField: 'combo_id',
+            as: 'combinationDetails',
+          },
+        },
         {
           $addFields: {
             courseDetails: {
@@ -114,6 +123,10 @@ export class PlansService {
                     case: { $eq: ['$course_type', 'prelimes'] },
                     then: { $arrayElemAt: ['$prelimesCourse', 0] },
                   },
+                  {
+                    case: { $eq: ['$course_type', 'combination'] },
+                    then: { $arrayElemAt: ['$combinationDetails', 0] },
+                  },
                 ],
                 default: null,
               },
@@ -129,6 +142,7 @@ export class PlansService {
             mainsCourse: 0,
             notesCourse: 0,
             prelimesCourse: 0,
+            combinationDetails: 0,
           },
         },
         { $skip: skip },

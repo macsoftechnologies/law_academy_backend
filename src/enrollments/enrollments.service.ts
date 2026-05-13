@@ -11,7 +11,7 @@ export class EnrollmentsService {
     @InjectModel(Enrollment.name)
     private readonly enrollmentModel: Model<Enrollment>,
     @InjectModel(Plan.name) private readonly plansModel: Model<Plan>,
-  ) {}
+  ) { }
 
   async addEnrollment(req: enrollmentDto) {
     try {
@@ -111,6 +111,16 @@ export class EnrollmentsService {
           },
         },
 
+        // Combinations
+        {
+          $lookup: {
+            from: 'combos',
+            localField: 'course_id',
+            foreignField: 'combo_id',
+            as: 'combinationDetails',
+          },
+        },
+
         // Pick correct course based on enroll_type
         {
           $addFields: {
@@ -137,6 +147,10 @@ export class EnrollmentsService {
                     case: { $eq: ['$enroll_type', 'prelimes'] },
                     then: { $arrayElemAt: ['$prelimesCourse', 0] },
                   },
+                  {
+                    case: { $eq: ['$enroll_type', 'combination'] },
+                    then: { $arrayElemAt: ['$combinationDetails', 0] },
+                  },
                 ],
                 default: null,
               },
@@ -152,6 +166,7 @@ export class EnrollmentsService {
             mainsCourse: 0,
             notesCourse: 0,
             prelimesCourse: 0,
+            combinationDetails: 0,
           },
         },
       ]);
@@ -177,8 +192,8 @@ export class EnrollmentsService {
   }
 
   async userEnrollmentDetails(req: enrollmentDto) {
-    try{
-     const findEnrollment = await this.enrollmentModel.aggregate([
+    try {
+      const findEnrollment = await this.enrollmentModel.aggregate([
         {
           $match: { enroll_id: req.enroll_id },
         },
@@ -231,6 +246,14 @@ export class EnrollmentsService {
           },
         },
         {
+          $lookup: {
+            from: 'combos',
+            localField: 'course_id',
+            foreignField: 'combo_id',
+            as: 'combinationDetails',
+          },
+        },
+        {
           $addFields: {
             courseDetails: {
               $switch: {
@@ -255,6 +278,11 @@ export class EnrollmentsService {
                     case: { $eq: ['$enroll_type', 'prelimes'] },
                     then: { $arrayElemAt: ['$prelimesCourse', 0] },
                   },
+                  {
+                    case: { $eq: ['$enroll_type', 'combination'] },
+                    then: { $arrayElemAt: ['$combinationDetails', 0] },
+                  }
+
                 ],
                 default: null,
               },
@@ -268,10 +296,11 @@ export class EnrollmentsService {
             mainsCourse: 0,
             notesCourse: 0,
             prelimesCourse: 0,
+            combinationDetails: 0,
           },
         },
       ]);
-      if(findEnrollment.length > 0) {
+      if (findEnrollment.length > 0) {
         return {
           statusCode: HttpStatus.OK,
           message: "Enrollment Details",
@@ -283,7 +312,7 @@ export class EnrollmentsService {
           message: "Enrollment not found"
         }
       }
-    } catch(error) {
+    } catch (error) {
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error.message

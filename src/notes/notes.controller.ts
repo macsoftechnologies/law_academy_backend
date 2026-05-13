@@ -53,6 +53,19 @@ export class NotesController {
     }
   }
 
+  @Get('/printedlist')
+  async getPrintedNotesList() {
+    try {
+      const getlist = await this.notesService.getPrintedNotesList();
+      return getlist;
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error,
+      };
+    }
+  }
+
   @Post('/details')
   async getNoteDetails(@Body() req: notesDto) {
     try {

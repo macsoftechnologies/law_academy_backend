@@ -61,6 +61,14 @@ export class SubjectNotesService {
             as: 'lawId',
           },
         },
+        {
+          $lookup: {
+            from: 'subjects',
+            localField: 'subjectId',
+            foreignField: 'subjectId',
+            as: 'subjectId',
+          },
+        },
         { $skip: skip },
         { $limit: limit },
       ]);
@@ -154,6 +162,7 @@ export class SubjectNotesService {
               pdf_url: req.pdf_url,
               isLocked: req.isLocked,
               presentation_image: req.presentation_image,
+              subjectId: req.subjectId,
             },
           },
         );
@@ -178,6 +187,7 @@ export class SubjectNotesService {
               title: req.title,
               pdf_url: req.pdf_url,
               isLocked: req.isLocked,
+              subjectId: req.subjectId,
             },
           },
         );

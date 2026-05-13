@@ -233,6 +233,29 @@ export class NotesService {
     }
   }
 
+  async getPrintedNotesList() {
+    try {
+      const list = await this.notesModel.find({ isPrintAvail: true });
+      if (list.length > 0) {
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'Printed Notes List',
+          data: list,
+        };
+      } else {
+        return {
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'No printed notes found',
+        };
+      }
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message || error,
+      };
+    }
+  }
+
   async getNotesById(req: notesDto) {
     try {
       const getlecture = await this.notesModel.findOne({

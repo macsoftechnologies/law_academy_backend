@@ -17,4 +17,6 @@ export class subjectNotesDto{
     presentation_image: string
     @ApiProperty()
     userId: string
+    @ApiProperty()
+    subjectId: string
 }

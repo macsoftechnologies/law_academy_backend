@@ -18,6 +18,8 @@ export class SubjectNotes extends Document {
   isLocked: boolean;
   @Prop()
   presentation_image: string
+  @Prop()
+  subjectId: string;
 }
 
 export const subjectNoteSchema = SchemaFactory.createForClass(SubjectNotes);
