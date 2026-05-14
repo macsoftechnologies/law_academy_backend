@@ -27,6 +27,7 @@ import { QaModule } from './qa/qa.module';
 import { PrelimesTestsModule } from './prelimes_tests/prelimes_tests.module';
 import { TestTermsModule } from './test_terms/test_terms.module';
 import { CombosModule } from './combos/combos.module';
+import { BillingsModule } from './billing/billing.module';
 
 @Module({
   imports: [
@@ -64,6 +65,7 @@ import { CombosModule } from './combos/combos.module';
     PrelimesTestsModule,
     TestTermsModule,
     CombosModule,
+    BillingsModule
   ],
   controllers: [AppController],
   providers: [

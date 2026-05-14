@@ -4,6 +4,7 @@ import { Enrollment } from './schema/enrollment.schema';
 import { Model } from 'mongoose';
 import { enrollmentDto } from './dto/enrollment.dto';
 import { Plan } from 'src/plans/schema/plans.schema';
+import { BillingsService } from 'src/billing/billing.service';
 
 @Injectable()
 export class EnrollmentsService {
@@ -11,45 +12,64 @@ export class EnrollmentsService {
     @InjectModel(Enrollment.name)
     private readonly enrollmentModel: Model<Enrollment>,
     @InjectModel(Plan.name) private readonly plansModel: Model<Plan>,
-  ) { }
+    private readonly billingsService: BillingsService,
+  ) {}
 
   async addEnrollment(req: enrollmentDto) {
     try {
       const enrollDate = new Date();
       const enroll_date = enrollDate.toString();
+
       const findPlan = await this.plansModel.findOne({ planId: req.planId });
       if (!findPlan) {
         throw new Error('Plan not found');
       }
 
       const durationInYears = parseInt(findPlan.duration);
-
       const expiryDate = new Date(enrollDate);
       expiryDate.setFullYear(enrollDate.getFullYear() + durationInYears);
       const expiry_date = expiryDate.toString();
       const course_id = findPlan.course_id;
+
       const addEnroll = await this.enrollmentModel.create({
         ...req,
         enroll_date,
         expiry_date,
         course_id,
       });
-      if (addEnroll) {
-        return {
-          statusCode: HttpStatus.OK,
-          message: 'Purchased course successfully',
-          data: addEnroll,
-        };
-      } else {
+
+      if (!addEnroll) {
         return {
           statusCode: HttpStatus.EXPECTATION_FAILED,
-          message: 'failed to purchase',
+          message: 'Failed to purchase',
         };
       }
+
+      console.log("findplan price", findPlan['original_price']);
+
+      await this.billingsService.createBilling({
+        userId: req.userId,
+        enroll_id: addEnroll.enroll_id,
+        planId: req.planId,
+        course_id,
+        enroll_type: req.enroll_type,
+        payment_id: req.payment_id,
+        amount: parseInt(findPlan['original_price']) ?? 0,
+        billing_cycle: findPlan.duration,
+        valid_till: expiry_date,
+        transaction_date: enroll_date,
+        gst_percent: 18,
+      });
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Purchased course successfully',
+        data: addEnroll,
+      };
     } catch (error) {
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: error,
+        message: error.message,
       };
     }
   }
@@ -57,9 +77,7 @@ export class EnrollmentsService {
   async userEnrollments(req: enrollmentDto) {
     try {
       const usercourses = await this.enrollmentModel.aggregate([
-        {
-          $match: { userId: req.userId },
-        },
+        { $match: { userId: req.userId } },
 
         // FULL COURSE
         {
@@ -111,7 +129,7 @@ export class EnrollmentsService {
           },
         },
 
-        // Combinations
+        // COMBINATIONS
         {
           $lookup: {
             from: 'combos',
@@ -121,7 +139,6 @@ export class EnrollmentsService {
           },
         },
 
-        // Pick correct course based on enroll_type
         {
           $addFields: {
             courseDetails: {
@@ -158,7 +175,6 @@ export class EnrollmentsService {
           },
         },
 
-        // Clean response
         {
           $project: {
             fullCourse: 0,
@@ -186,7 +202,7 @@ export class EnrollmentsService {
     } catch (error) {
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: error,
+        message: error.message,
       };
     }
   }
@@ -194,9 +210,7 @@ export class EnrollmentsService {
   async userEnrollmentDetails(req: enrollmentDto) {
     try {
       const findEnrollment = await this.enrollmentModel.aggregate([
-        {
-          $match: { enroll_id: req.enroll_id },
-        },
+        { $match: { enroll_id: req.enroll_id } },
         {
           $lookup: {
             from: 'plans',
@@ -281,8 +295,7 @@ export class EnrollmentsService {
                   {
                     case: { $eq: ['$enroll_type', 'combination'] },
                     then: { $arrayElemAt: ['$combinationDetails', 0] },
-                  }
-
+                  },
                 ],
                 default: null,
               },
@@ -300,23 +313,24 @@ export class EnrollmentsService {
           },
         },
       ]);
+
       if (findEnrollment.length > 0) {
         return {
           statusCode: HttpStatus.OK,
-          message: "Enrollment Details",
-          data: findEnrollment
-        }
+          message: 'Enrollment Details',
+          data: findEnrollment,
+        };
       } else {
         return {
           statusCode: HttpStatus.NOT_FOUND,
-          message: "Enrollment not found"
-        }
+          message: 'Enrollment not found',
+        };
       }
     } catch (error) {
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: error.message
-      }
+        message: error.message,
+      };
     }
   }
 }

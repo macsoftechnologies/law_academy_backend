@@ -4,6 +4,7 @@ import { EnrollmentsController } from './enrollments.controller';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Enrollment, enrollmentSchema } from './schema/enrollment.schema';
 import { Plan, planSchema } from 'src/plans/schema/plans.schema';
+import { BillingsModule } from 'src/billing/billing.module';
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import { Plan, planSchema } from 'src/plans/schema/plans.schema';
       { name: Enrollment.name, schema: enrollmentSchema },
       { name: Plan.name, schema: planSchema },
     ]),
+    BillingsModule,
   ],
   controllers: [EnrollmentsController],
   providers: [EnrollmentsService],
