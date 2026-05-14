@@ -573,7 +573,7 @@ export class BillingsService {
             transaction_date: b.transaction_date,
             billing_cycle: b.billing_cycle,
             valid_till: b.valid_till,
-            billing_status: b.billing_status,
+            billing_status: 'paid',
             currency: b.currency,
             amount_paise: b.amount_paise,
             base_amount_paise: b.base_amount_paise,
