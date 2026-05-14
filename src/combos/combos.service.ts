@@ -100,6 +100,15 @@ export class CombosService {
                 { $limit: limit },
                 {
                     $lookup: {
+                        from: 'categories',
+                        localField: 'categoryId',
+                        foreignField: 'categoryId',
+                        as: 'category',
+                    },
+                },
+                { $addFields: { category: { $arrayElemAt: ['$category', 0] } } },
+                {
+                    $lookup: {
                         from: 'subcategories',
                         localField: 'subcategory_id',
                         foreignField: 'subcategory_id',
