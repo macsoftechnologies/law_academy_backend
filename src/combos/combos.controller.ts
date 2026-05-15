@@ -9,18 +9,11 @@ import {
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { AnyFilesInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { CombosService } from './combos.service';
 import { comboDto } from './dtos/combo.dto';
-
-const storage = diskStorage({
-  destination: './uploads',
-  filename: (req, file, cb) => {
-    const uniqueName = `${Date.now()}-${file.originalname}`;
-    cb(null, uniqueName);
-  },
-});
+import { extname } from 'path';
 
 @Controller('combos')
 export class CombosController {
@@ -31,9 +24,25 @@ export class CombosController {
   // ──────────────────────────────────────────────────────────────────────────
 
   @Post('create')
-  @UseInterceptors(FileInterceptor('presentation_image', { storage }))
-  createCombo(@Body() body: comboDto, @UploadedFile() image?) {
-    return this.combosService.createCombo(body, image ? [image] : null);
+  @UseInterceptors(
+      AnyFilesInterceptor({
+        limits: {
+          fileSize: 4 * 1024 * 1024,
+        },
+        storage: diskStorage({
+          destination: './files',
+          filename: (req, file, cb) => {
+            const randomName = Array(32)
+              .fill(null)
+              .map(() => Math.round(Math.random() * 16).toString(16))
+              .join('');
+            cb(null, `${randomName}${extname(file.originalname)}`);
+          },
+        }),
+      }),
+    )
+  createCombo(@Body() body: comboDto, @UploadedFile() image) {
+    return this.combosService.createCombo(body, image);
   }
 
   @Get('list')
@@ -52,9 +61,25 @@ export class CombosController {
   }
 
   @Put('edit')
-  @UseInterceptors(FileInterceptor('presentation_image', { storage }))
-  editCombo(@Body() body: comboDto, @UploadedFile() image?) {
-    return this.combosService.editCombo(body, image ? [image] : null);
+  @UseInterceptors(
+      AnyFilesInterceptor({
+        limits: {
+          fileSize: 4 * 1024 * 1024,
+        },
+        storage: diskStorage({
+          destination: './files',
+          filename: (req, file, cb) => {
+            const randomName = Array(32)
+              .fill(null)
+              .map(() => Math.round(Math.random() * 16).toString(16))
+              .join('');
+            cb(null, `${randomName}${extname(file.originalname)}`);
+          },
+        }),
+      }),
+    )
+  editCombo(@Body() body: comboDto, @UploadedFile() image) {
+    return this.combosService.editCombo(body, image);
   }
 
   @Delete('delete')

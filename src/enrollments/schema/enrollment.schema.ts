@@ -23,6 +23,11 @@ export class Enrollment extends Document{
     enroll_type: string
     @Prop()
     planId: string
+
+    @Prop()
+    coupon_code: string
+    @Prop({ default: 0 })
+    final_price: number;
 }
 
 export const enrollmentSchema = SchemaFactory.createForClass(Enrollment);

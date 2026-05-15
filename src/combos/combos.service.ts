@@ -72,9 +72,20 @@ export class CombosService {
     }
 
     // ADMIN: Create Combo
-    async createCombo(req: comboDto, image?) {
+    async createCombo(req: comboDto, image) {
         try {
-            if (image && image[0]) req.presentation_image = image[0].filename;
+            if (image) {
+                const reqDoc = image.map((doc, index) => {
+                    let IsPrimary = false;
+                    if (index == 0) {
+                        IsPrimary = true;
+                    }
+                    const randomNumber = Math.floor(Math.random() * 1000000 + 1);
+                    return doc.filename;
+                });
+
+                req.presentation_image = reqDoc.toString();
+            }
             if (typeof req.lecture_config === 'string') req.lecture_config = JSON.parse(req.lecture_config);
             if (typeof req.notes_config === 'string') req.notes_config = JSON.parse(req.notes_config);
             if (typeof req.mains_ids === 'string') req.mains_ids = JSON.parse(req.mains_ids);
@@ -203,7 +214,18 @@ export class CombosService {
     // ADMIN: Edit combo
     async editCombo(req: comboDto, image?) {
         try {
-            if (image && image[0]) req.presentation_image = image[0].filename;
+            if (image) {
+                const reqDoc = image.map((doc, index) => {
+                    let IsPrimary = false;
+                    if (index == 0) {
+                        IsPrimary = true;
+                    }
+                    const randomNumber = Math.floor(Math.random() * 1000000 + 1);
+                    return doc.filename;
+                });
+
+                req.presentation_image = reqDoc.toString();
+            }
             if (typeof req.lecture_config === 'string') req.lecture_config = JSON.parse(req.lecture_config);
             if (typeof req.notes_config === 'string') req.notes_config = JSON.parse(req.notes_config);
             if (typeof req.mains_ids === 'string') req.mains_ids = JSON.parse(req.mains_ids);

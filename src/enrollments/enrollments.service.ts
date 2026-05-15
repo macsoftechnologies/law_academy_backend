@@ -5,15 +5,19 @@ import { Model } from 'mongoose';
 import { enrollmentDto } from './dto/enrollment.dto';
 import { Plan } from 'src/plans/schema/plans.schema';
 import { BillingsService } from 'src/billing/billing.service';
+import { Coupon } from 'src/coupons/schema/coupon.schema';
+import { couponStatus } from 'src/auth/guards/roles.enum';
 
 @Injectable()
 export class EnrollmentsService {
   constructor(
     @InjectModel(Enrollment.name)
     private readonly enrollmentModel: Model<Enrollment>,
+    @InjectModel(Coupon.name)
+    private readonly couponModel: Model<Coupon>,
     @InjectModel(Plan.name) private readonly plansModel: Model<Plan>,
     private readonly billingsService: BillingsService,
-  ) {}
+  ) { }
 
   async addEnrollment(req: enrollmentDto) {
     try {
@@ -23,6 +27,33 @@ export class EnrollmentsService {
       const findPlan = await this.plansModel.findOne({ planId: req.planId });
       if (!findPlan) {
         throw new Error('Plan not found');
+      }
+
+      const originalPrice = parseInt(findPlan['original_price']) ?? 0;
+
+      let final_price = originalPrice;
+      let appliedCouponCode: string = "";
+
+      if (req.coupon_code) {
+        const now = new Date();
+
+        const coupon = await this.couponModel.findOne({
+          coupon_code: req.coupon_code,
+          status: couponStatus.ACTIVE,
+          valid_from: { $lte: now },  
+          valid_to: { $gte: now },   
+        });
+
+        if (!coupon) {
+          return {
+            statusCode: HttpStatus.BAD_REQUEST,
+            message: 'Invalid or expired coupon code',
+          };
+        }
+
+        // Deduct offer_amount; floor at 0 so price never goes negative
+        final_price = Math.max(0, originalPrice - coupon.offer_amount);
+        appliedCouponCode = coupon.coupon_code;
       }
 
       const durationInYears = parseInt(findPlan.duration);
@@ -36,6 +67,8 @@ export class EnrollmentsService {
         enroll_date,
         expiry_date,
         course_id,
+        coupon_code: appliedCouponCode,   
+        final_price,                       
       });
 
       if (!addEnroll) {
@@ -45,16 +78,14 @@ export class EnrollmentsService {
         };
       }
 
-      console.log("findplan price", findPlan['original_price']);
-
       await this.billingsService.createBilling({
         userId: req.userId,
-        enroll_id: addEnroll.enroll_id,
+        enroll_id: addEnroll?.enroll_id,
         planId: req.planId,
         course_id,
         enroll_type: req.enroll_type,
         payment_id: req.payment_id,
-        amount: parseInt(findPlan['original_price']) ?? 0,
+        amount: final_price,          
         billing_cycle: findPlan.duration,
         valid_till: expiry_date,
         transaction_date: enroll_date,
@@ -64,7 +95,12 @@ export class EnrollmentsService {
       return {
         statusCode: HttpStatus.OK,
         message: 'Purchased course successfully',
-        data: addEnroll,
+        data: {
+          ...addEnroll.toObject(),
+          original_price: originalPrice,   
+          final_price,
+          coupon_applied: !!appliedCouponCode,
+        },
       };
     } catch (error) {
       return {

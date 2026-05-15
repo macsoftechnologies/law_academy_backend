@@ -19,4 +19,7 @@ export class enrollmentDto {
   enroll_type: string
   @ApiProperty()
   planId: string
+
+  @ApiProperty()
+  coupon_code: string
 }
