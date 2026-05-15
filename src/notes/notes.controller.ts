@@ -15,7 +15,7 @@ import { printedNotesOrderDto } from './dto/printed_notes_order.dto';
 
 @Controller('notes')
 export class NotesController {
-  constructor(private readonly notesService: NotesService) {}
+  constructor(private readonly notesService: NotesService) { }
 
   @Post('/add')
   @UseInterceptors(
@@ -125,18 +125,23 @@ export class NotesController {
   }
 
   @Get('/orders')
-  async getOrdersList(@Query('page') page = 1, @Query('limit') limit = 10) {
-    try{
+  async getOrdersList(
+    @Query('page') page = 1,
+    @Query('limit') limit = 10,
+    @Query('userId') userId?: string
+  ) {
+    try {
       const getlist = await this.notesService.getOrderList(
         Number(page),
-        Number(limit)
+        Number(limit),
+        userId
       );
-      return getlist
-    } catch(error) {
+      return getlist;
+    } catch (error) {
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error.message
-      }
+      };
     }
   }
 

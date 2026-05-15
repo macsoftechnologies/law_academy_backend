@@ -17,7 +17,7 @@ export class NotesService {
     @InjectModel(PrintedNotesOrder.name)
     private readonly printedNotesOrderModel: Model<PrintedNotesOrder>,
     private readonly authService: AuthService,
-  ) {}
+  ) { }
 
   async addNotes(req: notesDto, image) {
     try {
@@ -110,12 +110,12 @@ export class NotesService {
             isEnrolled: fullCourseEnrollment
               ? true
               : {
-                  $cond: [
-                    { $ifNull: ['$notesEnrollment', false] },
-                    true,
-                    false,
-                  ],
-                },
+                $cond: [
+                  { $ifNull: ['$notesEnrollment', false] },
+                  true,
+                  false,
+                ],
+              },
           },
         },
 
@@ -405,10 +405,14 @@ export class NotesService {
     }
   }
 
-  async getOrderList(page: number, limit: number) {
+  async getOrderList(page: number, limit: number, userId?: string) {
     try {
       const skip = (page - 1) * limit;
-      const findOrders = await this.printedNotesOrderModel.aggregate([
+
+      const matchStage = userId ? { $match: { userId: userId } } : null;
+
+      const pipeline: any[] = [
+        ...(matchStage ? [matchStage] : []),
         {
           $lookup: {
             from: 'notes',
@@ -441,21 +445,29 @@ export class NotesService {
             as: 'coupon_id',
           },
         },
+        { $sort: { createdAt: -1 } },
         { $skip: skip },
         { $limit: limit },
-        { $sort: { createdAt: -1 } },
-      ]);
+      ];
+
+      const findOrders = await this.printedNotesOrderModel.aggregate(pipeline);
+
       if (findOrders.length > 0) {
         return {
           statusCode: HttpStatus.OK,
-          message: 'List of Printed Notes Orders',
-          data: findOrders
+          message: userId
+            ? `Orders list for user ${userId}`
+            : 'List of Printed Notes Orders',
+          page: page,
+          limit: limit,
+          totalPages: Math.ceil(findOrders.length / limit),
+          data: findOrders,
         };
       } else {
         return {
           statusCode: HttpStatus.NOT_FOUND,
-          message: "Orders not found"
-        }
+          message: userId ? 'No orders found for this user' : 'Orders not found',
+        };
       }
     } catch (error) {
       return {
@@ -466,13 +478,13 @@ export class NotesService {
   }
 
   async notesOrderStatusUpdate(req: printedNotesOrderDto) {
-    try{
-      const updateStatus = await this.printedNotesOrderModel.updateOne({order_id: req.order_id},{
+    try {
+      const updateStatus = await this.printedNotesOrderModel.updateOne({ order_id: req.order_id }, {
         $set: {
           status: req.status
         }
       });
-      if(updateStatus.modifiedCount > 0) {
+      if (updateStatus.modifiedCount > 0) {
         return {
           statusCode: HttpStatus.OK,
           message: "Status Update Successfully",
@@ -483,7 +495,7 @@ export class NotesService {
           message: "failed to update status."
         }
       }
-    } catch(error) {
+    } catch (error) {
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error.message,
