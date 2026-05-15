@@ -73,20 +73,189 @@ export class MainsService {
     }
   }
 
+  // async getMainsList(page: number, limit: number, userId: string) {
+  //   try {
+  //     const skip = (page - 1) * limit;
+  //     const today = new Date();
+  //     const fullCourseEnrollment = await this.enrollmentModel.findOne({
+  //       userId,
+  //       enroll_type: 'full-course',
+  //       status: 'active',
+  //     });
+
+  //     const data = await this.MainsModel.aggregate([
+  //       { $skip: skip },
+  //       { $limit: limit },
+
+  //       {
+  //         $lookup: {
+  //           from: 'enrollments',
+  //           let: { mainsId: '$mains_id' },
+  //           pipeline: [
+  //             {
+  //               $match: {
+  //                 $expr: {
+  //                   $and: [
+  //                     { $eq: ['$userId', userId] },
+  //                     { $eq: ['$status', 'active'] },
+  //                     { $eq: ['$enroll_type', 'mains'] },
+  //                     { $eq: ['$course_id', '$$mainsId'] },
+  //                   ],
+  //                 },
+  //               },
+  //             },
+  //           ],
+  //           as: 'mainsEnrollment',
+  //         },
+  //       },
+
+  //       {
+  //         $addFields: {
+  //           mainsEnrollment: { $arrayElemAt: ['$mainsEnrollment', 0] },
+  //         },
+  //       },
+
+  //       {
+  //         $addFields: {
+  //           finalEnrollment: fullCourseEnrollment
+  //             ? fullCourseEnrollment
+  //             : '$mainsEnrollment',
+
+  //           isEnrolled: fullCourseEnrollment
+  //             ? true
+  //             : {
+  //                 $cond: [
+  //                   { $ifNull: ['$mainsEnrollment', false] },
+  //                   true,
+  //                   false,
+  //                 ],
+  //               },
+  //         },
+  //       },
+
+  //       {
+  //         $addFields: {
+  //           expiryDateClean: {
+  //             $cond: [
+  //               { $ifNull: ['$finalEnrollment.expiry_date', false] },
+  //               {
+  //                 $replaceAll: {
+  //                   input: '$finalEnrollment.expiry_date',
+  //                   find: ' (India Standard Time)',
+  //                   replacement: '',
+  //                 },
+  //               },
+  //               null,
+  //             ],
+  //           },
+  //         },
+  //       },
+
+  //       {
+  //         $addFields: {
+  //           expiryDateObj: {
+  //             $cond: [
+  //               { $ifNull: ['$expiryDateClean', false] },
+  //               {
+  //                 $dateFromString: {
+  //                   dateString: '$expiryDateClean',
+  //                   onError: null,
+  //                 },
+  //               },
+  //               null,
+  //             ],
+  //           },
+  //         },
+  //       },
+
+  //       {
+  //         $addFields: {
+  //           remaining_duration: {
+  //             $cond: [
+  //               {
+  //                 $and: [
+  //                   { $ifNull: ['$expiryDateObj', false] },
+  //                   { $gt: ['$expiryDateObj', today] },
+  //                 ],
+  //               },
+  //               {
+  //                 $ceil: {
+  //                   $divide: [
+  //                     { $subtract: ['$expiryDateObj', today] },
+  //                     1000 * 60 * 60 * 24,
+  //                   ],
+  //                 },
+  //               },
+  //               null,
+  //             ],
+  //           },
+  //         },
+  //       },
+
+  //       {
+  //         $lookup: {
+  //           from: 'plans',
+  //           localField: 'mains_id',
+  //           foreignField: 'course_id',
+  //           as: 'plans',
+  //         },
+  //       },
+
+  //       {
+  //         $addFields: {
+  //           availablePlans: {
+  //             $cond: [{ $eq: ['$isEnrolled', false] }, '$plans', []],
+  //           },
+  //         },
+  //       },
+
+  //       {
+  //         $project: {
+  //           title: 1,
+  //           sub_title: 1,
+  //           presentation_image: 1,
+  //           mains_id: 1,
+  //           subcategory_id: 1,
+
+  //           isEnrolled: 1,
+  //           enroll_date: '$finalEnrollment.enroll_date',
+  //           expiry_date: '$expiryDateObj',
+  //           remaining_duration: 1,
+
+  //           availablePlans: 1,
+  //         },
+  //       },
+  //     ]);
+
+  //     const totalCount = await this.MainsModel.countDocuments();
+
+  //     return {
+  //       statusCode: HttpStatus.OK,
+  //       message: 'List of Mains',
+  //       totalCount,
+  //       currentPage: page,
+  //       totalPages: Math.ceil(totalCount / limit),
+  //       limit,
+  //       data,
+  //     };
+  //   } catch (error) {
+  //     return {
+  //       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+  //       message: error.message || error,
+  //     };
+  //   }
+  // }
+  
   async getMainsList(page: number, limit: number, userId: string) {
     try {
       const skip = (page - 1) * limit;
       const today = new Date();
-      const fullCourseEnrollment = await this.enrollmentModel.findOne({
-        userId,
-        enroll_type: 'full-course',
-        status: 'active',
-      });
-
+  
       const data = await this.MainsModel.aggregate([
         { $skip: skip },
         { $limit: limit },
-
+  
+        // Lookup mains-specific enrollment
         {
           $lookup: {
             from: 'enrollments',
@@ -108,31 +277,48 @@ export class MainsService {
             as: 'mainsEnrollment',
           },
         },
-
+  
+        // Lookup full-course enrollment matched by subcategory_id
         {
-          $addFields: {
-            mainsEnrollment: { $arrayElemAt: ['$mainsEnrollment', 0] },
-          },
-        },
-
-        {
-          $addFields: {
-            finalEnrollment: fullCourseEnrollment
-              ? fullCourseEnrollment
-              : '$mainsEnrollment',
-
-            isEnrolled: fullCourseEnrollment
-              ? true
-              : {
-                  $cond: [
-                    { $ifNull: ['$mainsEnrollment', false] },
-                    true,
-                    false,
-                  ],
+          $lookup: {
+            from: 'enrollments',
+            let: { subCatId: '$subcategory_id' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$userId', userId] },
+                      { $eq: ['$status', 'active'] },
+                      { $eq: ['$enroll_type', 'full-course'] },
+                      { $eq: ['$course_id', '$$subCatId'] },
+                    ],
+                  },
                 },
+              },
+            ],
+            as: 'fullCourseEnrollment',
           },
         },
-
+  
+        {
+          $addFields: {
+            isEnrolled: {
+              $or: [
+                { $gt: [{ $size: '$fullCourseEnrollment' }, 0] },
+                { $gt: [{ $size: '$mainsEnrollment' }, 0] },
+              ],
+            },
+            finalEnrollment: {
+              $cond: [
+                { $gt: [{ $size: '$fullCourseEnrollment' }, 0] },
+                { $arrayElemAt: ['$fullCourseEnrollment', 0] },
+                { $arrayElemAt: ['$mainsEnrollment', 0] },
+              ],
+            },
+          },
+        },
+  
         {
           $addFields: {
             expiryDateClean: {
@@ -150,7 +336,7 @@ export class MainsService {
             },
           },
         },
-
+  
         {
           $addFields: {
             expiryDateObj: {
@@ -167,7 +353,7 @@ export class MainsService {
             },
           },
         },
-
+  
         {
           $addFields: {
             remaining_duration: {
@@ -191,7 +377,7 @@ export class MainsService {
             },
           },
         },
-
+  
         {
           $lookup: {
             from: 'plans',
@@ -200,7 +386,7 @@ export class MainsService {
             as: 'plans',
           },
         },
-
+  
         {
           $addFields: {
             availablePlans: {
@@ -208,7 +394,7 @@ export class MainsService {
             },
           },
         },
-
+  
         {
           $project: {
             title: 1,
@@ -216,19 +402,17 @@ export class MainsService {
             presentation_image: 1,
             mains_id: 1,
             subcategory_id: 1,
-
             isEnrolled: 1,
             enroll_date: '$finalEnrollment.enroll_date',
             expiry_date: '$expiryDateObj',
             remaining_duration: 1,
-
             availablePlans: 1,
           },
         },
       ]);
-
+  
       const totalCount = await this.MainsModel.countDocuments();
-
+  
       return {
         statusCode: HttpStatus.OK,
         message: 'List of Mains',

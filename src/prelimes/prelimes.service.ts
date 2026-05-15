@@ -16,7 +16,7 @@ export class PrelimesService {
     private readonly enrollmentModel: Model<Enrollment>,
     @InjectModel(MockTestSubject.name)
     private readonly mockTestSubjectModel: Model<MockTestSubject>,
-  ) {}
+  ) { }
 
   async addPrelimes(req: prelimesDto, image) {
     try {
@@ -59,20 +59,189 @@ export class PrelimesService {
     }
   }
 
+  // async getPrelimesList(page: number, limit: number, userId: string) {
+  //   try {
+  //     const skip = (page - 1) * limit;
+  //     const today = new Date();
+  //     const fullCourseEnrollment = await this.enrollmentModel.findOne({
+  //       userId,
+  //       enroll_type: 'full-course',
+  //       status: 'active',
+  //     });
+
+  //     const data = await this.prelimesModel.aggregate([
+  //       { $skip: skip },
+  //       { $limit: limit },
+
+  //       {
+  //         $lookup: {
+  //           from: 'enrollments',
+  //           let: { prelimesId: '$prelimes_id' },
+  //           pipeline: [
+  //             {
+  //               $match: {
+  //                 $expr: {
+  //                   $and: [
+  //                     { $eq: ['$userId', userId] },
+  //                     { $eq: ['$status', 'active'] },
+  //                     { $eq: ['$enroll_type', 'prelimes'] },
+  //                     { $eq: ['$course_id', '$$prelimesId'] },
+  //                   ],
+  //                 },
+  //               },
+  //             },
+  //           ],
+  //           as: 'prelimesEnrollment',
+  //         },
+  //       },
+
+  //       {
+  //         $addFields: {
+  //           prelimesEnrollment: { $arrayElemAt: ['$prelimesEnrollment', 0] },
+  //         },
+  //       },
+
+  //       {
+  //         $addFields: {
+  //           finalEnrollment: fullCourseEnrollment
+  //             ? fullCourseEnrollment
+  //             : '$prelimesEnrollment',
+
+  //           isEnrolled: fullCourseEnrollment
+  //             ? true
+  //             : {
+  //                 $cond: [
+  //                   { $ifNull: ['$prelimesEnrollment', false] },
+  //                   true,
+  //                   false,
+  //                 ],
+  //               },
+  //         },
+  //       },
+
+  //       {
+  //         $addFields: {
+  //           expiryDateClean: {
+  //             $cond: [
+  //               { $ifNull: ['$finalEnrollment.expiry_date', false] },
+  //               {
+  //                 $replaceAll: {
+  //                   input: '$finalEnrollment.expiry_date',
+  //                   find: ' (India Standard Time)',
+  //                   replacement: '',
+  //                 },
+  //               },
+  //               null,
+  //             ],
+  //           },
+  //         },
+  //       },
+
+  //       {
+  //         $addFields: {
+  //           expiryDateObj: {
+  //             $cond: [
+  //               { $ifNull: ['$expiryDateClean', false] },
+  //               {
+  //                 $dateFromString: {
+  //                   dateString: '$expiryDateClean',
+  //                   onError: null,
+  //                 },
+  //               },
+  //               null,
+  //             ],
+  //           },
+  //         },
+  //       },
+
+  //       {
+  //         $addFields: {
+  //           remaining_duration: {
+  //             $cond: [
+  //               {
+  //                 $and: [
+  //                   { $ifNull: ['$expiryDateObj', false] },
+  //                   { $gt: ['$expiryDateObj', today] },
+  //                 ],
+  //               },
+  //               {
+  //                 $ceil: {
+  //                   $divide: [
+  //                     { $subtract: ['$expiryDateObj', today] },
+  //                     1000 * 60 * 60 * 24,
+  //                   ],
+  //                 },
+  //               },
+  //               null,
+  //             ],
+  //           },
+  //         },
+  //       },
+
+  //       {
+  //         $lookup: {
+  //           from: 'plans',
+  //           localField: 'prelimes_id',
+  //           foreignField: 'course_id',
+  //           as: 'plans',
+  //         },
+  //       },
+
+  //       {
+  //         $addFields: {
+  //           availablePlans: {
+  //             $cond: [{ $eq: ['$isEnrolled', false] }, '$plans', []],
+  //           },
+  //         },
+  //       },
+
+  //       {
+  //         $project: {
+  //           title: 1,
+  //           sub_title: 1,
+  //           presentation_image: 1,
+  //           prelimes_id: 1,
+  //           subcategory_id: 1,
+
+  //           isEnrolled: 1,
+  //           enroll_date: '$finalEnrollment.enroll_date',
+  //           expiry_date: '$expiryDateObj',
+  //           remaining_duration: 1,
+
+  //           availablePlans: 1,
+  //         },
+  //       },
+  //     ]);
+
+  //     const totalCount = await this.prelimesModel.countDocuments();
+
+  //     return {
+  //       statusCode: HttpStatus.OK,
+  //       message: 'List of Prelimes',
+  //       totalCount,
+  //       currentPage: page,
+  //       totalPages: Math.ceil(totalCount / limit),
+  //       limit,
+  //       data,
+  //     };
+  //   } catch (error) {
+  //     return {
+  //       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+  //       message: error.message || error,
+  //     };
+  //   }
+  // }
+
   async getPrelimesList(page: number, limit: number, userId: string) {
     try {
       const skip = (page - 1) * limit;
       const today = new Date();
-      const fullCourseEnrollment = await this.enrollmentModel.findOne({
-        userId,
-        enroll_type: 'full-course',
-        status: 'active',
-      });
 
       const data = await this.prelimesModel.aggregate([
         { $skip: skip },
         { $limit: limit },
 
+        // Lookup prelimes-specific enrollment
         {
           $lookup: {
             from: 'enrollments',
@@ -95,27 +264,44 @@ export class PrelimesService {
           },
         },
 
+        // Lookup full-course enrollment matched by subcategory_id
         {
-          $addFields: {
-            prelimesEnrollment: { $arrayElemAt: ['$prelimesEnrollment', 0] },
+          $lookup: {
+            from: 'enrollments',
+            let: { subCatId: '$subcategory_id' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$userId', userId] },
+                      { $eq: ['$status', 'active'] },
+                      { $eq: ['$enroll_type', 'full-course'] },
+                      { $eq: ['$course_id', '$$subCatId'] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'fullCourseEnrollment',
           },
         },
 
         {
           $addFields: {
-            finalEnrollment: fullCourseEnrollment
-              ? fullCourseEnrollment
-              : '$prelimesEnrollment',
-
-            isEnrolled: fullCourseEnrollment
-              ? true
-              : {
-                  $cond: [
-                    { $ifNull: ['$prelimesEnrollment', false] },
-                    true,
-                    false,
-                  ],
-                },
+            isEnrolled: {
+              $or: [
+                { $gt: [{ $size: '$fullCourseEnrollment' }, 0] },
+                { $gt: [{ $size: '$prelimesEnrollment' }, 0] },
+              ],
+            },
+            finalEnrollment: {
+              $cond: [
+                { $gt: [{ $size: '$fullCourseEnrollment' }, 0] },
+                { $arrayElemAt: ['$fullCourseEnrollment', 0] },
+                { $arrayElemAt: ['$prelimesEnrollment', 0] },
+              ],
+            },
           },
         },
 
@@ -202,12 +388,10 @@ export class PrelimesService {
             presentation_image: 1,
             prelimes_id: 1,
             subcategory_id: 1,
-
             isEnrolled: 1,
             enroll_date: '$finalEnrollment.enroll_date',
             expiry_date: '$expiryDateObj',
             remaining_duration: 1,
-
             availablePlans: 1,
           },
         },

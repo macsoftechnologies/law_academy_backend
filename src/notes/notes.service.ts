@@ -59,139 +59,383 @@ export class NotesService {
     }
   }
 
+  // async getNotesList(page: number, limit: number, userId: string) {
+  //   try {
+  //     const skip = (page - 1) * limit;
+  //     const today = new Date();
+  //     const fullCourseEnrollment = await this.enrollmentModel.findOne({
+  //       userId,
+  //       enroll_type: 'full-course',
+  //       status: 'active',
+  //     });
+
+  //     const data = await this.notesModel.aggregate([
+  //       { $skip: skip },
+  //       { $limit: limit },
+
+  //       {
+  //         $lookup: {
+  //           from: 'enrollments',
+  //           let: { notesId: '$notes_id' },
+  //           pipeline: [
+  //             {
+  //               $match: {
+  //                 $expr: {
+  //                   $and: [
+  //                     { $eq: ['$userId', userId] },
+  //                     { $eq: ['$status', 'active'] },
+  //                     { $eq: ['$enroll_type', 'notes'] },
+  //                     { $eq: ['$course_id', '$$notesId'] },
+  //                   ],
+  //                 },
+  //               },
+  //             },
+  //           ],
+  //           as: 'notesEnrollment',
+  //         },
+  //       },
+
+  //       {
+  //         $addFields: {
+  //           notesEnrollment: { $arrayElemAt: ['$notesEnrollment', 0] },
+  //         },
+  //       },
+
+  //       {
+  //         $addFields: {
+  //           finalEnrollment: fullCourseEnrollment
+  //             ? fullCourseEnrollment
+  //             : '$notesEnrollment',
+
+  //           isEnrolled: fullCourseEnrollment
+  //             ? true
+  //             : {
+  //               $cond: [
+  //                 { $ifNull: ['$notesEnrollment', false] },
+  //                 true,
+  //                 false,
+  //               ],
+  //             },
+  //         },
+  //       },
+
+  //       {
+  //         $addFields: {
+  //           expiryDateClean: {
+  //             $cond: [
+  //               { $ifNull: ['$finalEnrollment.expiry_date', false] },
+  //               {
+  //                 $replaceAll: {
+  //                   input: '$finalEnrollment.expiry_date',
+  //                   find: ' (India Standard Time)',
+  //                   replacement: '',
+  //                 },
+  //               },
+  //               null,
+  //             ],
+  //           },
+  //         },
+  //       },
+
+  //       {
+  //         $addFields: {
+  //           expiryDateObj: {
+  //             $cond: [
+  //               { $ifNull: ['$expiryDateClean', false] },
+  //               {
+  //                 $dateFromString: {
+  //                   dateString: '$expiryDateClean',
+  //                   onError: null,
+  //                 },
+  //               },
+  //               null,
+  //             ],
+  //           },
+  //         },
+  //       },
+
+  //       {
+  //         $addFields: {
+  //           remaining_duration: {
+  //             $cond: [
+  //               {
+  //                 $and: [
+  //                   { $ifNull: ['$expiryDateObj', false] },
+  //                   { $gt: ['$expiryDateObj', today] },
+  //                 ],
+  //               },
+  //               {
+  //                 $ceil: {
+  //                   $divide: [
+  //                     { $subtract: ['$expiryDateObj', today] },
+  //                     1000 * 60 * 60 * 24,
+  //                   ],
+  //                 },
+  //               },
+  //               null,
+  //             ],
+  //           },
+  //         },
+  //       },
+
+  //       {
+  //         $lookup: {
+  //           from: 'plans',
+  //           localField: 'notes_id',
+  //           foreignField: 'course_id',
+  //           as: 'plans',
+  //         },
+  //       },
+
+  //       {
+  //         $addFields: {
+  //           availablePlans: {
+  //             $cond: [{ $eq: ['$isEnrolled', false] }, '$plans', []],
+  //           },
+  //         },
+  //       },
+
+  //       {
+  //         $project: {
+  //           title: 1,
+  //           sub_title: 1,
+  //           presentation_image: 1,
+  //           printNotes_image: 1,
+  //           notes_id: 1,
+  //           subcategory_id: 1,
+  //           about_book: 1,
+
+  //           isEnrolled: 1,
+  //           enroll_date: '$finalEnrollment.enroll_date',
+  //           expiry_date: '$expiryDateObj',
+  //           remaining_duration: 1,
+
+  //           availablePlans: 1,
+  //         },
+  //       },
+  //     ]);
+
+  //     const totalCount = await this.notesModel.countDocuments();
+
+  //     return {
+  //       statusCode: HttpStatus.OK,
+  //       message: 'List of Notes',
+  //       totalCount,
+  //       currentPage: page,
+  //       totalPages: Math.ceil(totalCount / limit),
+  //       limit,
+  //       data,
+  //     };
+  //   } catch (error) {
+  //     return {
+  //       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+  //       message: error.message || error,
+  //     };
+  //   }
+  // }
+
   async getNotesList(page: number, limit: number, userId: string) {
-    try {
-      const skip = (page - 1) * limit;
-      const today = new Date();
-      const fullCourseEnrollment = await this.enrollmentModel.findOne({
-        userId,
-        enroll_type: 'full-course',
-        status: 'active',
-      });
+  try {
+    const skip = (page - 1) * limit;
+    const today = new Date();
 
-      const data = await this.notesModel.aggregate([
-        { $skip: skip },
-        { $limit: limit },
+    const data = await this.notesModel.aggregate([
+      { $skip: skip },
+      { $limit: limit },
 
-        {
-          $lookup: {
-            from: 'enrollments',
-            let: { notesId: '$notes_id' },
-            pipeline: [
-              {
-                $match: {
-                  $expr: {
-                    $and: [
-                      { $eq: ['$userId', userId] },
-                      { $eq: ['$status', 'active'] },
-                      { $eq: ['$enroll_type', 'notes'] },
-                      { $eq: ['$course_id', '$$notesId'] },
-                    ],
-                  },
-                },
-              },
-            ],
-            as: 'notesEnrollment',
-          },
-        },
-
-        {
-          $addFields: {
-            notesEnrollment: { $arrayElemAt: ['$notesEnrollment', 0] },
-          },
-        },
-
-        {
-          $addFields: {
-            finalEnrollment: fullCourseEnrollment
-              ? fullCourseEnrollment
-              : '$notesEnrollment',
-
-            isEnrolled: fullCourseEnrollment
-              ? true
-              : {
-                $cond: [
-                  { $ifNull: ['$notesEnrollment', false] },
-                  true,
-                  false,
-                ],
-              },
-          },
-        },
-
-        {
-          $addFields: {
-            expiryDateClean: {
-              $cond: [
-                { $ifNull: ['$finalEnrollment.expiry_date', false] },
-                {
-                  $replaceAll: {
-                    input: '$finalEnrollment.expiry_date',
-                    find: ' (India Standard Time)',
-                    replacement: '',
-                  },
-                },
-                null,
-              ],
-            },
-          },
-        },
-
-        {
-          $addFields: {
-            expiryDateObj: {
-              $cond: [
-                { $ifNull: ['$expiryDateClean', false] },
-                {
-                  $dateFromString: {
-                    dateString: '$expiryDateClean',
-                    onError: null,
-                  },
-                },
-                null,
-              ],
-            },
-          },
-        },
-
-        {
-          $addFields: {
-            remaining_duration: {
-              $cond: [
-                {
+      // Lookup notes-specific enrollment
+      {
+        $lookup: {
+          from: 'enrollments',
+          let: { notesId: '$notes_id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
                   $and: [
-                    { $ifNull: ['$expiryDateObj', false] },
-                    { $gt: ['$expiryDateObj', today] },
+                    { $eq: ['$userId', userId] },
+                    { $eq: ['$status', 'active'] },
+                    { $eq: ['$enroll_type', 'notes'] },
+                    { $eq: ['$course_id', '$$notesId'] },
                   ],
                 },
-                {
-                  $ceil: {
-                    $divide: [
-                      { $subtract: ['$expiryDateObj', today] },
-                      1000 * 60 * 60 * 24,
-                    ],
-                  },
-                },
-                null,
-              ],
+              },
             },
+          ],
+          as: 'notesEnrollment',
+        },
+      },
+
+      // Lookup full-course enrollment matched by subcategory_id
+      {
+        $lookup: {
+          from: 'enrollments',
+          let: { subCatId: '$subcategory_id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$userId', userId] },
+                    { $eq: ['$status', 'active'] },
+                    { $eq: ['$enroll_type', 'full-course'] },
+                    { $eq: ['$course_id', '$$subCatId'] },
+                  ],
+                },
+              },
+            },
+          ],
+          as: 'fullCourseEnrollment',
+        },
+      },
+
+      {
+        $addFields: {
+          isEnrolled: {
+            $or: [
+              { $gt: [{ $size: '$fullCourseEnrollment' }, 0] },
+              { $gt: [{ $size: '$notesEnrollment' }, 0] },
+            ],
+          },
+          finalEnrollment: {
+            $cond: [
+              { $gt: [{ $size: '$fullCourseEnrollment' }, 0] },
+              { $arrayElemAt: ['$fullCourseEnrollment', 0] },
+              { $arrayElemAt: ['$notesEnrollment', 0] },
+            ],
+          },
+        },
+      },
+
+      {
+        $addFields: {
+          expiryDateClean: {
+            $cond: [
+              { $ifNull: ['$finalEnrollment.expiry_date', false] },
+              {
+                $replaceAll: {
+                  input: '$finalEnrollment.expiry_date',
+                  find: ' (India Standard Time)',
+                  replacement: '',
+                },
+              },
+              null,
+            ],
+          },
+        },
+      },
+
+      {
+        $addFields: {
+          expiryDateObj: {
+            $cond: [
+              { $ifNull: ['$expiryDateClean', false] },
+              {
+                $dateFromString: {
+                  dateString: '$expiryDateClean',
+                  onError: null,
+                },
+              },
+              null,
+            ],
+          },
+        },
+      },
+
+      {
+        $addFields: {
+          remaining_duration: {
+            $cond: [
+              {
+                $and: [
+                  { $ifNull: ['$expiryDateObj', false] },
+                  { $gt: ['$expiryDateObj', today] },
+                ],
+              },
+              {
+                $ceil: {
+                  $divide: [
+                    { $subtract: ['$expiryDateObj', today] },
+                    1000 * 60 * 60 * 24,
+                  ],
+                },
+              },
+              null,
+            ],
+          },
+        },
+      },
+
+      {
+        $lookup: {
+          from: 'plans',
+          localField: 'notes_id',
+          foreignField: 'course_id',
+          as: 'plans',
+        },
+      },
+
+      {
+        $addFields: {
+          availablePlans: {
+            $cond: [{ $eq: ['$isEnrolled', false] }, '$plans', []],
+          },
+        },
+      },
+
+      {
+        $project: {
+          title: 1,
+          sub_title: 1,
+          presentation_image: 1,
+          printNotes_image: 1,
+          notes_id: 1,
+          subcategory_id: 1,
+          about_book: 1,
+          isEnrolled: 1,
+          enroll_date: '$finalEnrollment.enroll_date',
+          expiry_date: '$expiryDateObj',
+          remaining_duration: 1,
+          availablePlans: 1,
+        },
+      },
+    ]);
+
+    const totalCount = await this.notesModel.countDocuments();
+
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'List of Notes',
+      totalCount,
+      currentPage: page,
+      totalPages: Math.ceil(totalCount / limit),
+      limit,
+      data,
+    };
+  } catch (error) {
+    return {
+      statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+      message: error.message || error,
+    };
+  }
+}
+
+  async getPrintedNotesList() {
+    try {
+      const list = await this.notesModel.aggregate([
+        {
+          $match: {
+            isPrintAvail: true,
           },
         },
 
+        // Fetch plans
         {
           $lookup: {
             from: 'plans',
             localField: 'notes_id',
             foreignField: 'course_id',
-            as: 'plans',
-          },
-        },
-
-        {
-          $addFields: {
-            availablePlans: {
-              $cond: [{ $eq: ['$isEnrolled', false] }, '$plans', []],
-            },
+            as: 'availablePlans',
           },
         },
 
@@ -203,39 +447,14 @@ export class NotesService {
             printNotes_image: 1,
             notes_id: 1,
             subcategory_id: 1,
-
-            isEnrolled: 1,
-            enroll_date: '$finalEnrollment.enroll_date',
-            expiry_date: '$expiryDateObj',
-            remaining_duration: 1,
+            isPrintAvail: 1,
+            about_book: 1,
 
             availablePlans: 1,
           },
         },
       ]);
 
-      const totalCount = await this.notesModel.countDocuments();
-
-      return {
-        statusCode: HttpStatus.OK,
-        message: 'List of Notes',
-        totalCount,
-        currentPage: page,
-        totalPages: Math.ceil(totalCount / limit),
-        limit,
-        data,
-      };
-    } catch (error) {
-      return {
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: error.message || error,
-      };
-    }
-  }
-
-  async getPrintedNotesList() {
-    try {
-      const list = await this.notesModel.find({ isPrintAvail: true });
       if (list.length > 0) {
         return {
           statusCode: HttpStatus.OK,
