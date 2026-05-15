@@ -8,10 +8,24 @@ import { couponDto } from './dto/coupon.dto';
 export class CouponsService {
   constructor(
     @InjectModel(Coupon.name) private readonly couponModel: Model<Coupon>,
-  ) {}
+  ) { }
 
   async createCoupon(req: couponDto) {
     try {
+      if (req.coupon_code) {
+        const existingCoupon = await this.couponModel.findOne({
+          coupon_code: {
+            $regex: `^${req.coupon_code}$`,
+            $options: 'i',
+          },
+        });
+        if (existingCoupon) {
+          return {
+            statusCode: HttpStatus.BAD_REQUEST,
+            message: 'Coupon code already exists',
+          };
+        }
+      }
       const add = await this.couponModel.create(req);
       if (add) {
         return {
@@ -117,9 +131,9 @@ export class CouponsService {
   }
 
   async deleteCoupon(req: couponDto) {
-    try{
-      const removecoupon = await this.couponModel.deleteOne({couponId: req.couponId});
-      if(removecoupon) {
+    try {
+      const removecoupon = await this.couponModel.deleteOne({ couponId: req.couponId });
+      if (removecoupon) {
         return {
           statusCode: HttpStatus.OK,
           message: "Coupon deleted successfully",
@@ -130,7 +144,7 @@ export class CouponsService {
           message: "Failed to delete coupon",
         }
       }
-    } catch(error) {
+    } catch (error) {
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error,

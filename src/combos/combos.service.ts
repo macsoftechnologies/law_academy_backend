@@ -162,11 +162,14 @@ export class CombosService {
     // ADMIN: Get combo by ID (full detail)
     async getComboById(req: comboDto) {
         try {
-            const combo = await this.comboModel.findOne({ combo_id: req.combo_id })
+            const combo = await this.comboModel.findOne({ combo_id: req.combo_id });
             if (!combo) return { statusCode: HttpStatus.NOT_FOUND, message: 'Combo not found' };
 
             const lectureLawId = combo.lecture_config?.law_id;
             const notesLawId = combo.notes_config?.law_id;
+
+            // Build laws array
+            let laws: any = [];
 
             // Case: both configs point to the same law → single object with both
             if (lectureLawId && notesLawId && lectureLawId === notesLawId) {
@@ -175,34 +178,51 @@ export class CombosService {
                     combo.includes_lectures,
                     combo.includes_notes
                 );
-                return {
-                    statusCode: HttpStatus.OK,
-                    message: 'Combo Details',
-                    data: { ...combo.toObject(), laws: [law] },
-                };
+                laws = [law];
+            } else {
+                // Case: different law ids → build each with only its relevant flag
+                const lawPromises: Promise<any>[] = [];
+
+                if (lectureLawId) {
+                    lawPromises.push(
+                        this.buildLawHierarchy(lectureLawId, combo.includes_lectures, false)
+                    );
+                }
+
+                if (notesLawId) {
+                    lawPromises.push(
+                        this.buildLawHierarchy(notesLawId, false, combo.includes_notes)
+                    );
+                }
+
+                laws = await Promise.all(lawPromises);
             }
 
-            // Case: different law ids → build each with only its relevant flag
-            const lawPromises: Promise<any>[] = [];
-
-            if (lectureLawId) {
-                lawPromises.push(
-                    this.buildLawHierarchy(lectureLawId, combo.includes_lectures, false)
-                );
+            // Fetch mains details if included and IDs exist
+            let mains_details = [];
+            if (combo.includes_mains && combo.mains_ids?.length) {
+                mains_details = await this.mainsModel
+                    .find({ mains_id: { $in: combo.mains_ids } })
+                    .select('mains_id title sub_title about_course course_points terms_conditions presentation_image subcategory_id');
             }
 
-            if (notesLawId) {
-                lawPromises.push(
-                    this.buildLawHierarchy(notesLawId, false, combo.includes_notes)
-                );
+            // Fetch prelimes details if included and IDs exist
+            let prelimes_details = [];
+            if (combo.includes_prelimes && combo.prelimes_ids?.length) {
+                prelimes_details = await this.prelimesModel
+                    .find({ prelimes_id: { $in: combo.prelimes_ids } })
+                    .select('prelimes_id title sub_title about_course course_points terms_conditions presentation_image subcategory_id');
             }
-
-            const laws = await Promise.all(lawPromises);
 
             return {
                 statusCode: HttpStatus.OK,
                 message: 'Combo Details',
-                data: { ...combo.toObject(), laws },
+                data: {
+                    ...combo.toObject(),
+                    laws,
+                    mains_details,
+                    prelimes_details,
+                },
             };
 
         } catch (error) {
