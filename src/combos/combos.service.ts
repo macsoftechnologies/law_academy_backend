@@ -151,22 +151,49 @@ export class CombosService {
     // ADMIN: Get combo by ID (full detail)
     async getComboById(req: comboDto) {
         try {
-            const combo = await this.comboModel.findOne({ combo_id: req.combo_id });
+            const combo = await this.comboModel.findOne({ combo_id: req.combo_id })
             if (!combo) return { statusCode: HttpStatus.NOT_FOUND, message: 'Combo not found' };
 
-            const lawIds: string[] = [];
-            if (combo.lecture_config?.law_id) lawIds.push(combo.lecture_config.law_id);
-            if (combo.notes_config?.law_id) lawIds.push(combo.notes_config.law_id);
+            const lectureLawId = combo.lecture_config?.law_id;
+            const notesLawId = combo.notes_config?.law_id;
 
-            const uniqueLawIds = [...new Set(lawIds)];
+            // Case: both configs point to the same law → single object with both
+            if (lectureLawId && notesLawId && lectureLawId === notesLawId) {
+                const law = await this.buildLawHierarchy(
+                    lectureLawId,
+                    combo.includes_lectures,
+                    combo.includes_notes
+                );
+                return {
+                    statusCode: HttpStatus.OK,
+                    message: 'Combo Details',
+                    data: { ...combo.toObject(), laws: [law] },
+                };
+            }
 
-            const laws = await Promise.all(
-                uniqueLawIds.map((lawId) =>
-                    this.buildLawHierarchy(lawId, combo.includes_lectures, combo.includes_notes)
-                )
-            );
+            // Case: different law ids → build each with only its relevant flag
+            const lawPromises: Promise<any>[] = [];
 
-            return { statusCode: HttpStatus.OK, message: 'Combo Details', data: { ...combo.toObject(), laws } };
+            if (lectureLawId) {
+                lawPromises.push(
+                    this.buildLawHierarchy(lectureLawId, combo.includes_lectures, false)
+                );
+            }
+
+            if (notesLawId) {
+                lawPromises.push(
+                    this.buildLawHierarchy(notesLawId, false, combo.includes_notes)
+                );
+            }
+
+            const laws = await Promise.all(lawPromises);
+
+            return {
+                statusCode: HttpStatus.OK,
+                message: 'Combo Details',
+                data: { ...combo.toObject(), laws },
+            };
+
         } catch (error) {
             return { statusCode: HttpStatus.INTERNAL_SERVER_ERROR, message: error.message };
         }
@@ -449,7 +476,7 @@ export class CombosService {
             return { statusCode: HttpStatus.INTERNAL_SERVER_ERROR, message: error.message };
         }
     }
-    
+
     async getComboContent(comboId: string, userId: string) {
         try {
             // First check for combination enrollment
