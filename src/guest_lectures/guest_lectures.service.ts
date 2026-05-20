@@ -166,6 +166,7 @@ export class GuestLecturesService {
               about_class: req.about_class,
               about_lecture: req.about_lecture,
               video_url: req.video_url,
+              isLocked: req.isLocked,
             },
           },
         );
