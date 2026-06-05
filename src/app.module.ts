@@ -28,6 +28,11 @@ import { PrelimesTestsModule } from './prelimes_tests/prelimes_tests.module';
 import { TestTermsModule } from './test_terms/test_terms.module';
 import { CombosModule } from './combos/combos.module';
 import { BillingsModule } from './billing/billing.module';
+import { ReferralsModule } from './referrals/referrals.module';
+import { CartModule } from './cart/cart.module';
+import { WishlistModule } from './wishlist/wishlist.module';
+import { MarksdashboardModule } from './marksdashboard/marksdashboard.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -65,7 +70,12 @@ import { BillingsModule } from './billing/billing.module';
     PrelimesTestsModule,
     TestTermsModule,
     CombosModule,
-    BillingsModule
+    BillingsModule,
+    ReferralsModule,
+    CartModule,
+    WishlistModule,
+    MarksdashboardModule,
+    NotificationsModule
   ],
   controllers: [AppController],
   providers: [

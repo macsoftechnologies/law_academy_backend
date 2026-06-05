@@ -17,6 +17,8 @@ export class Coupon extends Document{
     valid_from: Date
     @Prop()
     valid_to: Date
+    @Prop({ required: false })
+    userId?: string
 }
 
 export const couponSchema = SchemaFactory.createForClass(Coupon);

@@ -7,6 +7,8 @@ import { Plan } from 'src/plans/schema/plans.schema';
 import { BillingsService } from 'src/billing/billing.service';
 import { Coupon } from 'src/coupons/schema/coupon.schema';
 import { couponStatus } from 'src/auth/guards/roles.enum';
+import { ReferralsService } from 'src/referrals/referrals.service';
+import { NotificationsService } from 'src/notifications/notifications.service';
 
 @Injectable()
 export class EnrollmentsService {
@@ -17,6 +19,8 @@ export class EnrollmentsService {
     private readonly couponModel: Model<Coupon>,
     @InjectModel(Plan.name) private readonly plansModel: Model<Plan>,
     private readonly billingsService: BillingsService,
+    private readonly referralsService: ReferralsService,
+    private readonly notificationsService: NotificationsService,
   ) { }
 
   async addEnrollment(req: enrollmentDto) {
@@ -37,11 +41,18 @@ export class EnrollmentsService {
       if (req.coupon_code) {
         const now = new Date();
 
+        // Check if coupon exists, is active, is within validity dates,
+        // and is either unrestricted or belongs to the current user.
         const coupon = await this.couponModel.findOne({
           coupon_code: req.coupon_code,
           status: couponStatus.ACTIVE,
           valid_from: { $lte: now },  
-          valid_to: { $gte: now },   
+          valid_to: { $gte: now },
+          $or: [
+            { userId: { $exists: false } },
+            { userId: null },
+            { userId: req.userId },
+          ],
         });
 
         if (!coupon) {
@@ -91,6 +102,30 @@ export class EnrollmentsService {
         transaction_date: enroll_date,
         gst_percent: 18,
       });
+
+      // Award referral reward if applicable
+      try {
+        await this.referralsService.handleReferralPurchase(
+          req.userId,
+          addEnroll.enroll_id,
+          course_id,
+        );
+      } catch (referralErr) {
+        console.error('Failed to process referral purchase reward:', referralErr);
+      }
+
+      // Trigger in-app notification for enrollment
+      try {
+        await this.notificationsService.create(
+          req.userId,
+          'Course Enrolled Successfully',
+          `Welcome! Your enrollment for the course is now active.`,
+          'enrollment',
+          { enrollId: addEnroll.enroll_id, courseId: course_id }
+        );
+      } catch (notiErr) {
+        console.error('Failed to create enrollment notification:', notiErr);
+      }
 
       return {
         statusCode: HttpStatus.OK,
