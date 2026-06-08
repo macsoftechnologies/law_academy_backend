@@ -35,7 +35,7 @@ export class UsersService {
     @InjectModel(ShippingAddress.name)
     private readonly shippingAddressModel: Model<ShippingAddress>,
     private readonly authService: AuthService,
-  ) {}
+  ) { }
 
   private async createUniqueReferralCode(): Promise<string> {
     let code: string;
@@ -164,7 +164,12 @@ export class UsersService {
         //   await this.mailService.sendOtp(text, otp);
         findUser = await this.userModel.findOne({ email: text });
       }
-
+      if (!findUser) {
+        return {
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'User Not Found',
+        };
+      }
       return {
         statusCode: HttpStatus.OK,
         message: `OTP sent successfully via ${loginType}`,
