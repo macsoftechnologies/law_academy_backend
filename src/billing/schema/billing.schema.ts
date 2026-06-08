@@ -50,7 +50,7 @@ export class Billing extends Document {
   billing_status: string;
 
   // GST fields
-  @Prop({ default: 18 })
+  @Prop({ default: 0 })
   gst_percent: number;
 
   @Prop()

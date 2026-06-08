@@ -35,6 +35,7 @@ export class EnrollmentsService {
       }
 
       const originalPrice = parseInt(findPlan['original_price']) ?? 0;
+      const handlingFee = parseInt(findPlan['handling_fee']) || 0;
 
       let final_price = originalPrice;
       let appliedCouponCode: string = "";
@@ -47,7 +48,7 @@ export class EnrollmentsService {
         const coupon = await this.couponModel.findOne({
           coupon_code: { $regex: `^${req.coupon_code}$`, $options: 'i' },
           status: { $regex: `^${couponStatus.ACTIVE}$`, $options: 'i' },
-          valid_from: { $lte: now },  
+          valid_from: { $lte: now },
           valid_to: { $gte: now },
           $or: [
             { userId: { $exists: false } },
@@ -68,6 +69,8 @@ export class EnrollmentsService {
         appliedCouponCode = coupon.coupon_code;
       }
 
+      final_price += handlingFee;
+
       const durationInYears = parseInt(findPlan.duration);
       const expiryDate = new Date(enrollDate);
       expiryDate.setFullYear(enrollDate.getFullYear() + durationInYears);
@@ -79,8 +82,8 @@ export class EnrollmentsService {
         enroll_date,
         expiry_date,
         course_id,
-        coupon_code: appliedCouponCode,   
-        final_price,                       
+        coupon_code: appliedCouponCode,
+        final_price,
       });
 
       if (!addEnroll) {
@@ -97,11 +100,11 @@ export class EnrollmentsService {
         course_id,
         enroll_type: req.enroll_type,
         payment_id: req.payment_id,
-        amount: final_price,          
+        amount: final_price,
         billing_cycle: findPlan.duration,
         valid_till: expiry_date,
         transaction_date: enroll_date,
-        gst_percent: 18,
+        gst_percent: 0,
       });
 
       // Award referral reward if applicable
@@ -133,7 +136,7 @@ export class EnrollmentsService {
         message: 'Purchased course successfully',
         data: {
           ...addEnroll.toObject(),
-          original_price: originalPrice,   
+          original_price: originalPrice,
           final_price,
           coupon_applied: !!appliedCouponCode,
         },
@@ -417,6 +420,7 @@ export class EnrollmentsService {
       }
 
       const originalPrice = parseInt(findPlan['original_price']) ?? 0;
+      const handlingFee = parseInt(findPlan['handling_fee']) || 0;
       let final_price = originalPrice;
       let appliedCouponCode = '';
       let discount_amount = 0;
@@ -451,11 +455,14 @@ export class EnrollmentsService {
         appliedCouponCode = coupon.coupon_code;
       }
 
+      final_price += handlingFee;
+
       return {
         statusCode: HttpStatus.OK,
         message: 'Calculated enrollment price',
         data: {
           original_price: originalPrice,
+          handling_fee: handlingFee,
           discount_amount,
           final_price,
           coupon_code: appliedCouponCode,

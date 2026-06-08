@@ -245,16 +245,19 @@ export function generateInvoiceHtml(data: InvoiceData): string {
         <td>${data.billing_cycle}</td>
         <td>${fmt(data.base_amount_paise)}</td>
       </tr>
+      ${data.gst_percent > 0 ? `
       <tr>
         <td><div class="item-sub">GST @ ${data.gst_percent}%</div></td>
         <td></td>
         <td>${fmt(data.gst_amount_paise)}</td>
       </tr>
+      ` : ''}
     </tbody>
   </table>
 
   <!-- Totals -->
   <div class="totals">
+    ${data.gst_percent > 0 ? `
     <div class="totals-row">
       <span>Subtotal</span>
       <span>${fmt(data.base_amount_paise)}</span>
@@ -263,6 +266,7 @@ export function generateInvoiceHtml(data: InvoiceData): string {
       <span>GST (${data.gst_percent}%)</span>
       <span>${fmt(data.gst_amount_paise)}</span>
     </div>
+    ` : ''}
     <div class="totals-row grand">
       <span>Total Paid</span>
       <span>${fmt(data.amount_paise)}</span>

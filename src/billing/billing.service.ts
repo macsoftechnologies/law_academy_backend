@@ -31,7 +31,7 @@ export class BillingsService {
         gst_percent?: number;
     }) {
         try {
-            const gst = payload.gst_percent ?? 18;
+            const gst = payload.gst_percent ?? 0;
             const totalPaise = Math.round(payload.amount * 100);
             const basePaise = Math.round(totalPaise / (1 + gst / 100));
             const gstPaise = totalPaise - basePaise;
