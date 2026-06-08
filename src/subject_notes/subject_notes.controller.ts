@@ -16,7 +16,7 @@ import { extname } from 'path';
 
 @Controller('subject-notes')
 export class SubjectNotesController {
-  constructor(private readonly subjectNotesService: SubjectNotesService) {}
+  constructor(private readonly subjectNotesService: SubjectNotesService) { }
 
   @Post('/add')
   @UseInterceptors(
@@ -51,12 +51,14 @@ export class SubjectNotesController {
   @Get('/')
   async getSubjectNotes(
     @Query('page') page = 10,
-    @Query('limit') limit = 10
+    @Query('limit') limit = 10,
+    @Query('userId') userId: string
   ) {
     try {
       const getlist = await this.subjectNotesService.getSubjectNotesList(
         Number(page),
         Number(limit),
+        userId,
       );
       return getlist;
     } catch (error) {

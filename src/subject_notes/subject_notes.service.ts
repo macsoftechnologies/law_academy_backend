@@ -38,11 +38,20 @@ export class SubjectNotesService {
     }
   }
 
-  async getSubjectNotesList(page: number, limit: number) {
+  async getSubjectNotesList(page: number, limit: number, userId?: string) {
     try {
       const skip = (page - 1) * limit;
 
       const totalCount = await this.subjectNotesModel.countDocuments();
+
+      let hasAccess = false;
+      if (userId) {
+        hasAccess = !!(await this.enrollmentModel.exists({
+          userId,
+          enroll_type: { $in: ['full-course', 'notes'] },
+          status: 'active',
+        }));
+      }
 
       const list = await this.subjectNotesModel.aggregate([
         {
@@ -67,6 +76,17 @@ export class SubjectNotesService {
             localField: 'subjectId',
             foreignField: 'subjectId',
             as: 'subjectId',
+          },
+        },
+        {
+          $addFields: {
+            isLocked: {
+              $cond: {
+                if: hasAccess,
+                then: false,
+                else: '$isLocked',
+              },
+            },
           },
         },
         { $skip: skip },
