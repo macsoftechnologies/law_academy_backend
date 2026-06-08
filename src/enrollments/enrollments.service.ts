@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Enrollment } from './schema/enrollment.schema';
 import { Model } from 'mongoose';
 import { enrollmentDto } from './dto/enrollment.dto';
+import { CalculatePriceDto } from './dto/calculate-price.dto';
 import { Plan } from 'src/plans/schema/plans.schema';
 import { BillingsService } from 'src/billing/billing.service';
 import { Coupon } from 'src/coupons/schema/coupon.schema';
@@ -44,8 +45,8 @@ export class EnrollmentsService {
         // Check if coupon exists, is active, is within validity dates,
         // and is either unrestricted or belongs to the current user.
         const coupon = await this.couponModel.findOne({
-          coupon_code: req.coupon_code,
-          status: couponStatus.ACTIVE,
+          coupon_code: { $regex: `^${req.coupon_code}$`, $options: 'i' },
+          status: { $regex: `^${couponStatus.ACTIVE}$`, $options: 'i' },
           valid_from: { $lte: now },  
           valid_to: { $gte: now },
           $or: [
@@ -397,6 +398,70 @@ export class EnrollmentsService {
           message: 'Enrollment not found',
         };
       }
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+      };
+    }
+  }
+
+  async calculateEnrollmentPrice(req: CalculatePriceDto) {
+    try {
+      const findPlan = await this.plansModel.findOne({ planId: req.planId });
+      if (!findPlan) {
+        return {
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'Plan not found',
+        };
+      }
+
+      const originalPrice = parseInt(findPlan['original_price']) ?? 0;
+      let final_price = originalPrice;
+      let appliedCouponCode = '';
+      let discount_amount = 0;
+
+      if (req.coupon_code) {
+        const now = new Date();
+
+        // Check if coupon exists, is active, is within validity dates,
+        // and is either unrestricted or belongs to the current user.
+        const coupon = await this.couponModel.findOne({
+          coupon_code: { $regex: `^${req.coupon_code}$`, $options: 'i' },
+          status: { $regex: `^${couponStatus.ACTIVE}$`, $options: 'i' },
+          valid_from: { $lte: now },
+          valid_to: { $gte: now },
+          $or: [
+            { userId: { $exists: false } },
+            { userId: null },
+            { userId: req.userId },
+          ],
+        });
+
+        if (!coupon) {
+          return {
+            statusCode: HttpStatus.BAD_REQUEST,
+            message: 'Invalid or expired coupon code',
+          };
+        }
+
+        discount_amount = coupon.offer_amount;
+        // Deduct offer_amount; floor at 0 so price never goes negative
+        final_price = Math.max(0, originalPrice - discount_amount);
+        appliedCouponCode = coupon.coupon_code;
+      }
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Calculated enrollment price',
+        data: {
+          original_price: originalPrice,
+          discount_amount,
+          final_price,
+          coupon_code: appliedCouponCode,
+          coupon_applied: !!appliedCouponCode,
+        },
+      };
     } catch (error) {
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,

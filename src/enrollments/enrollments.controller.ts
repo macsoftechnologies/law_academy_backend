@@ -1,6 +1,7 @@
 import { Body, Controller, HttpStatus, Post } from '@nestjs/common';
 import { EnrollmentsService } from './enrollments.service';
 import { enrollmentDto } from './dto/enrollment.dto';
+import { CalculatePriceDto } from './dto/calculate-price.dto';
 
 @Controller('enrollments')
 export class EnrollmentsController {
@@ -42,6 +43,19 @@ export class EnrollmentsController {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error.message
       }
+    }
+  }
+
+  @Post('/calculate-price')
+  async calculatePrice(@Body() req: CalculatePriceDto) {
+    try {
+      const result = await this.enrollmentsService.calculateEnrollmentPrice(req);
+      return result;
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+      };
     }
   }
 }
