@@ -1,0 +1,660 @@
+{
+    "info": {
+        "name": "Help Center - Tickets Module",
+        "_postman_id": "tickets-module-v1",
+        "description": "Role-based Help Center & Support Ticket API. Set the `baseUrl` collection variable to your server (default: http://localhost:3000) and use the Login requests to populate `{{token}}` for protected routes.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:3000",
+            "type": "string"
+        },
+        {
+            "key": "token",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "ticketId",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "messageId",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "userId",
+            "value": "USER_ID_HERE",
+            "type": "string"
+        }
+    ],
+    "item": [
+        {
+            "name": "🎓 Student Endpoints",
+            "item": [
+                {
+                    "name": "Create Course Ticket",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "if (res.data && res.data.ticketId) {",
+                                    "  pm.collectionVariables.set('ticketId', res.data.ticketId);",
+                                    "  console.log('ticketId saved:', res.data.ticketId);",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/tickets/create",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"title\": \"Cannot access Module 3 videos\",\n  \"description\": \"Clicking on Module 3 videos shows a blank screen. Tried Chrome and Firefox.\",\n  \"ticket_type\": \"course\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Create Support Ticket",
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/tickets/create",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"title\": \"Payment not reflecting\",\n  \"description\": \"I paid for the Pro plan 3 days ago but my account still shows Free tier.\",\n  \"ticket_type\": \"support\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Get My Tickets (all)",
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/tickets/user-list",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"page\": 1,\n  \"limit\": 10\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Get My Tickets (filter: pending)",
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/tickets/user-list",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"status\": \"pending\",\n  \"page\": 1,\n  \"limit\": 10\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Get Ticket Details (with conversation)",
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/tickets/details",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"ticketId\": \"{{ticketId}}\",\n  \"userId\": \"{{userId}}\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Student: Add Message to Conversation",
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/tickets/add-message",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"ticketId\": \"{{ticketId}}\",\n  \"senderId\": \"{{userId}}\",\n  \"message\": \"I have tried clearing my cache and the issue persists. Please help urgently.\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Schedule Callback",
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/tickets/schedule-call",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"ticketId\": \"{{ticketId}}\",\n  \"userId\": \"{{userId}}\",\n  \"scheduledAt\": \"2025-02-15T10:00:00.000Z\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Mark Messages as Read (Student)",
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/tickets/mark-read",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"ticketId\": \"{{ticketId}}\",\n  \"userId\": \"{{userId}}\"\n}"
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "🔐 Admin (All Tickets)",
+            "item": [
+                {
+                    "name": "Admin: List All Tickets",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{baseUrl}}/tickets/admin/list?page=1&limit=10",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "tickets",
+                                "admin",
+                                "list"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                }
+                            ]
+                        },
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "Admin: List Tickets (filter: pending)",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{baseUrl}}/tickets/admin/list?status=pending&page=1&limit=10",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "tickets",
+                                "admin",
+                                "list"
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "pending"
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                }
+                            ]
+                        },
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "Admin: List Tickets (search)",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{baseUrl}}/tickets/admin/list?search=payment&page=1&limit=10",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "tickets",
+                                "admin",
+                                "list"
+                            ],
+                            "query": [
+                                {
+                                    "key": "search",
+                                    "value": "payment"
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                }
+                            ]
+                        },
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "Admin: Get Ticket Details (with conversation)",
+                    "request": {
+                        "method": "GET",
+                        "url": "{{baseUrl}}/tickets/admin/details/{{ticketId}}",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "Admin: Reply to Ticket",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "if (res.data && res.data.messages) {",
+                                    "  const msgs = res.data.messages;",
+                                    "  if (msgs.length > 0) {",
+                                    "    pm.collectionVariables.set('messageId', msgs[msgs.length-1]._id);",
+                                    "  }",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/tickets/admin/add-message",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"ticketId\": \"{{ticketId}}\",\n  \"senderId\": \"ADMIN_USER_ID\",\n  \"message\": \"Hi, we have reviewed your issue and are escalating it to the technical team. Expected resolution in 24 hours.\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Admin: Update Status → in_progress",
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/tickets/admin/update-status",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"ticketId\": \"{{ticketId}}\",\n  \"status\": \"in_progress\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Admin: Update Status → resolved",
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/tickets/admin/update-status",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"ticketId\": \"{{ticketId}}\",\n  \"status\": \"resolved\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Admin: Update Status → closed",
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/tickets/admin/update-status",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"ticketId\": \"{{ticketId}}\",\n  \"status\": \"closed\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Admin: Assign Ticket",
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/tickets/admin/assign",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"ticketId\": \"{{ticketId}}\",\n  \"assigneeId\": \"STAFF_USER_ID\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Admin: Mark Messages as Read",
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/tickets/admin/mark-read",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"ticketId\": \"{{ticketId}}\",\n  \"userId\": \"ADMIN_USER_ID\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Admin: Delete Message (soft)",
+                    "request": {
+                        "method": "DELETE",
+                        "url": "{{baseUrl}}/tickets/admin/{{ticketId}}/message/{{messageId}}",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "Admin: Update Call Status",
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/tickets/admin/update-call-status",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"ticketId\": \"{{ticketId}}\",\n  \"callStatus\": \"completed\"\n}"
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "👨‍🏫 Teacher (Course Tickets Only)",
+            "item": [
+                {
+                    "name": "Teacher: List Tickets (should only see course)",
+                    "request": {
+                        "method": "GET",
+                        "url": "{{baseUrl}}/tickets/admin/list?page=1&limit=10",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "Teacher: Reply to Course Ticket ✅",
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/tickets/admin/add-message",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"ticketId\": \"COURSE_TICKET_ID\",\n  \"senderId\": \"TEACHER_USER_ID\",\n  \"message\": \"The videos for module 3 are currently being re-encoded. They will be available within 2 hours.\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Teacher: Reply to Support Ticket ❌ (expect 403)",
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/tickets/admin/add-message",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"ticketId\": \"SUPPORT_TICKET_ID\",\n  \"senderId\": \"TEACHER_USER_ID\",\n  \"message\": \"Attempting to reply to a support ticket as teacher — should return 403.\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Teacher: View Support Ticket ❌ (expect 403)",
+                    "request": {
+                        "method": "GET",
+                        "url": "{{baseUrl}}/tickets/admin/details/SUPPORT_TICKET_ID",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "🛎️ Support / SupportAdmin (Support Tickets Only)",
+            "item": [
+                {
+                    "name": "Support: List Tickets (should only see support)",
+                    "request": {
+                        "method": "GET",
+                        "url": "{{baseUrl}}/tickets/admin/list?page=1&limit=10",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "Support: Reply to Support Ticket ✅",
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/tickets/admin/add-message",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"ticketId\": \"SUPPORT_TICKET_ID\",\n  \"senderId\": \"SUPPORT_USER_ID\",\n  \"message\": \"Your payment has been received. The account upgrade may take up to 24 hours to reflect. Apologies for the inconvenience!\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Support: Reply to Course Ticket ❌ (expect 403)",
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/tickets/admin/add-message",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"ticketId\": \"COURSE_TICKET_ID\",\n  \"senderId\": \"SUPPORT_USER_ID\",\n  \"message\": \"Attempting to reply to a course ticket as support — should return 403.\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Support: View Course Ticket ❌ (expect 403)",
+                    "request": {
+                        "method": "GET",
+                        "url": "{{baseUrl}}/tickets/admin/details/COURSE_TICKET_ID",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "SupportAdmin: Resolve Support Ticket ✅",
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/tickets/admin/update-status",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"ticketId\": \"SUPPORT_TICKET_ID\",\n  \"status\": \"resolved\"\n}"
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

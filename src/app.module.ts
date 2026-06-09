@@ -33,6 +33,7 @@ import { CartModule } from './cart/cart.module';
 import { WishlistModule } from './wishlist/wishlist.module';
 import { MarksdashboardModule } from './marksdashboard/marksdashboard.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { TicketModule } from './ticket/ticket.module';
 
 @Module({
   imports: [
@@ -75,7 +76,8 @@ import { NotificationsModule } from './notifications/notifications.module';
     CartModule,
     WishlistModule,
     MarksdashboardModule,
-    NotificationsModule
+    NotificationsModule,
+    TicketModule
   ],
   controllers: [AppController],
   providers: [
