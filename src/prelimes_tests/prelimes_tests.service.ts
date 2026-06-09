@@ -695,4 +695,121 @@ export class PrelimesTestsService {
       };
     }
   }
+
+  async getAttemptsForExport(test_type?: string) {
+    const pipeline: any[] = [
+      {
+        $lookup: {
+          from: 'prelimestests',
+          localField: 'testId',
+          foreignField: 'prelimes_test_id',
+          as: 'testId',
+        },
+      },
+      {
+        $unwind: {
+          path: '$testId',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+    ];
+
+    if (test_type) {
+      pipeline.push({ $match: { 'testId.test_type': test_type } });
+    }
+
+    pipeline.push(
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: 'userId',
+          as: 'userId',
+        },
+      },
+      {
+        $unwind: {
+          path: '$userId',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $lookup: {
+          from: 'prelimesresults',
+          localField: 'prelimes_attempt_id',
+          foreignField: 'attemptId',
+          as: 'result',
+        },
+      },
+      {
+        $unwind: {
+          path: '$result',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $sort: { createdAt: -1 }
+      }
+    );
+
+    return this.attemptModel.aggregate(pipeline);
+  }
+
+  async getUserTestAttemptsForExport(userId: string, testId: string) {
+    return this.attemptModel.aggregate([
+      {
+        $match: {
+          testId: testId,
+          userId: userId,
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: 'userId',
+          as: 'user',
+        },
+      },
+      {
+        $unwind: {
+          path: '$user',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $lookup: {
+          from: 'prelimestests',
+          localField: 'testId',
+          foreignField: 'prelimes_test_id',
+          as: 'testInfo',
+        },
+      },
+      {
+        $unwind: {
+          path: '$testInfo',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $lookup: {
+          from: 'prelimesresults',
+          localField: 'prelimes_attempt_id',
+          foreignField: 'attemptId',
+          as: 'result',
+        },
+      },
+      {
+        $unwind: {
+          path: '$result',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $sort: { attemptNumber: 1 },
+      },
+    ]);
+  }
 }
+
+

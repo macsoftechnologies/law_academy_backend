@@ -8,7 +8,10 @@ import {
   UploadedFile,
   UploadedFiles,
   UseInterceptors,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
+import { exportToCsvString, exportToExcelBuffer } from 'src/utils/export.util';
 import { MainsService } from './mains.service';
 import { AnyFilesInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -347,6 +350,76 @@ export class MainsController {
     }
   }
 
+  @Get('/mains_attempts/export')
+  async exportMainsAttempts(
+    @Res() res: Response,
+    @Query('format') format = 'excel',
+  ) {
+    try {
+      const attempts = await this.mainsService.getAttemptsForExport();
+
+      const headers = [
+        'Attempt ID',
+        'Student ID',
+        'Student Name',
+        'Student Email',
+        'Student Mobile Number',
+        'Mains Test Title',
+        'Subject Test Title',
+        'Attempt Number',
+        'Attempt Date',
+        'Attempt Time',
+        'Answer Script URL',
+        'Status',
+        'Marks Scored',
+        'Overall Percentage',
+        'Feedback'
+      ];
+
+      const rows = attempts.map(attempt => [
+        attempt.mains_attempt_id || '',
+        attempt.user?.userId || '',
+        attempt.user?.name || '',
+        attempt.user?.email || '',
+        attempt.user?.mobile_number || '',
+        attempt.mainsTest?.title || '',
+        attempt.subject?.title || '',
+        attempt.attempt_no || '',
+        attempt.date || '',
+        attempt.time || '',
+        attempt.answer_script_file || '',
+        attempt.status || '',
+        attempt.result?.marks_scored ?? '',
+        attempt.result?.overall_percentage != null ? `${attempt.result.overall_percentage}%` : '',
+        attempt.result?.feedback || ''
+      ]);
+
+      if (format === 'csv') {
+        const csvString = exportToCsvString(headers, rows);
+        const buffer = Buffer.from(csvString, 'utf-8');
+        res.set({
+          'Content-Type': 'text/csv; charset=utf-8',
+          'Content-Disposition': 'attachment; filename="mains_attempts_export.csv"',
+          'Content-Length': buffer.length,
+        });
+        return res.end(buffer);
+      } else {
+        const buffer = exportToExcelBuffer(headers, rows, 'Mains Attempts');
+        res.set({
+          'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'Content-Disposition': 'attachment; filename="mains_attempts_export.xlsx"',
+          'Content-Length': buffer.length,
+        });
+        return res.end(buffer);
+      }
+    } catch (error) {
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+      });
+    }
+  }
+
   @Post('/mainstestattempts')
   async mainsTestAttempts(@Body() body: { mains_test_id: string; userId: string },) {
     try {
@@ -361,6 +434,87 @@ export class MainsController {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error.message,
       };
+    }
+  }
+
+  @Get('/mainstestattempts/export')
+  async exportMainsTestAttempts(
+    @Res() res: Response,
+    @Query('mains_test_id') mains_test_id: string,
+    @Query('userId') userId: string,
+    @Query('format') format = 'excel',
+  ) {
+    if (!mains_test_id || !userId) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'mains_test_id and userId query parameters are required',
+      });
+    }
+
+    try {
+      const attempts = await this.mainsService.getMainsTestAttemptsForExport(mains_test_id, userId);
+
+      const headers = [
+        'Attempt ID',
+        'Student ID',
+        'Student Name',
+        'Student Email',
+        'Student Mobile Number',
+        'Mains Test Title',
+        'Subject Test Title',
+        'Attempt Number',
+        'Attempt Date',
+        'Attempt Time',
+        'Answer Script URL',
+        'Status',
+        'Marks Scored',
+        'Overall Percentage',
+        'Feedback'
+      ];
+
+      const rows = attempts.map(attempt => [
+        attempt.mains_attempt_id || '',
+        attempt.userId || '',
+        attempt.user?.name || '',
+        attempt.user?.email || '',
+        attempt.user?.mobile_number || '',
+        attempt.mainsTest?.title || '',
+        attempt.subject?.title || '',
+        attempt.attempt_no || '',
+        attempt.date || '',
+        attempt.time || '',
+        attempt.answer_script_file || '',
+        attempt.status || '',
+        attempt.result?.marks_scored ?? '',
+        attempt.result?.overall_percentage != null ? `${attempt.result.overall_percentage}%` : '',
+        attempt.result?.feedback || ''
+      ]);
+
+      const filenamePrefix = `user_${userId}_mains_test_${mains_test_id}_attempts`;
+
+      if (format === 'csv') {
+        const csvString = exportToCsvString(headers, rows);
+        const buffer = Buffer.from(csvString, 'utf-8');
+        res.set({
+          'Content-Type': 'text/csv; charset=utf-8',
+          'Content-Disposition': `attachment; filename="${filenamePrefix}_export.csv"`,
+          'Content-Length': buffer.length,
+        });
+        return res.end(buffer);
+      } else {
+        const buffer = exportToExcelBuffer(headers, rows, 'User Mains Attempts');
+        res.set({
+          'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'Content-Disposition': `attachment; filename="${filenamePrefix}_export.xlsx"`,
+          'Content-Length': buffer.length,
+        });
+        return res.end(buffer);
+      }
+    } catch (error) {
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+      });
     }
   }
 

@@ -1552,4 +1552,138 @@ export class MainsService {
       };
     }
   }
+
+  async getAttemptsForExport() {
+    return this.mainsAttemptModel.aggregate([
+      {
+        $lookup: {
+          from: 'mainsresults',
+          localField: 'mains_attempt_id',
+          foreignField: 'mains_attempt_id',
+          as: 'result',
+        },
+      },
+      { $unwind: { path: '$result', preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: 'userId',
+          as: 'user',
+        },
+      },
+      { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: 'mainssubjecttests',
+          localField: 'mains_subject_test_id',
+          foreignField: 'mains_subject_test_id',
+          as: 'subject',
+        },
+      },
+      { $unwind: { path: '$subject', preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: 'mainstests',
+          localField: 'subject.mains_test_id',
+          foreignField: 'mains_test_id',
+          as: 'mainsTest',
+        },
+      },
+      { $unwind: { path: '$mainsTest', preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          mains_attempt_id: 1,
+          date: 1,
+          time: 1,
+          answer_script_file: 1,
+          status: 1,
+          attempt_no: 1,
+          createdAt: 1,
+          user: {
+            userId: '$user.userId',
+            name: '$user.name',
+            email: '$user.email',
+            mobile_number: '$user.mobile_number',
+          },
+          subject: {
+            mains_subject_test_id: '$subject.mains_subject_test_id',
+            title: '$subject.title',
+            no_of_qos: '$subject.no_of_qos',
+            duration: '$subject.duration',
+            marks: '$subject.marks',
+          },
+          mainsTest: {
+            mains_test_id: '$mainsTest.mains_test_id',
+            title: '$mainsTest.title',
+            no_of_qs: '$mainsTest.no_of_qs',
+            no_of_subjects: '$mainsTest.no_of_subjects',
+          },
+          result: '$result',
+        },
+      },
+      {
+        $sort: { createdAt: -1 },
+      },
+    ]);
+  }
+
+  async getMainsTestAttemptsForExport(mainsTestId: string, userId: string) {
+    return this.mainsAttemptModel.aggregate([
+      {
+        $match: { userId },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: 'userId',
+          as: 'user',
+        },
+      },
+      { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: 'mainssubjecttests',
+          localField: 'mains_subject_test_id',
+          foreignField: 'mains_subject_test_id',
+          as: 'subject',
+        },
+      },
+      { $unwind: '$subject' },
+      {
+        $lookup: {
+          from: 'mainstests',
+          localField: 'subject.mains_test_id',
+          foreignField: 'mains_test_id',
+          as: 'mainsTest',
+        },
+      },
+      { $unwind: '$mainsTest' },
+      {
+        $match: {
+          'mainsTest.mains_test_id': mainsTestId,
+        },
+      },
+      {
+        $lookup: {
+          from: 'mainsresults',
+          localField: 'mains_attempt_id',
+          foreignField: 'mains_attempt_id',
+          as: 'result',
+        },
+      },
+      {
+        $unwind: {
+          path: '$result',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $sort: { attempt_no: 1, 'subject.title': 1 }
+      }
+    ]);
+  }
 }
+
+

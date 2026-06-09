@@ -1,4 +1,6 @@
-import { Body, Controller, Get, HttpStatus, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpStatus, Param, Post, Query, Res } from '@nestjs/common';
+import { Response } from 'express';
+import { exportToCsvString, exportToExcelBuffer } from 'src/utils/export.util';
 import { PrelimesTestsService } from './prelimes_tests.service';
 import { prelimesTestDto } from './dto/prelimes_tests.dto';
 import { prelimesQuestionDto } from './dto/prelimes_questions.dto';
@@ -165,6 +167,101 @@ export class PrelimesTestsController {
     );
   }
 
+  @Get('/attempts/export')
+  async exportAttempts(
+    @Res() res: Response,
+    @Query('test_type') test_type?: string,
+    @Query('format') format = 'excel',
+  ) {
+    try {
+      const attempts = await this.prelimesTestsService.getAttemptsForExport(test_type);
+
+      const headers = [
+        'Attempt ID',
+        'Student ID',
+        'Student Name',
+        'Student Email',
+        'Student Mobile Number',
+        'Test ID',
+        'Test Title',
+        'Test Type',
+        'Attempt Number',
+        'Started At',
+        'Submitted At',
+        'Total Questions',
+        'Attempted',
+        'Correct',
+        'Wrong',
+        'Skipped',
+        'Score',
+        'Percentage',
+        'Accuracy',
+        'Time Spent (sec)',
+        'Rank',
+        'Total Participants',
+        'Percentile'
+      ];
+
+      const testTypeMap: Record<string, string> = {
+        'SMT': 'Subject-wise Mock Test',
+        'GT': 'Grand Test',
+        'QZ': 'Quiz'
+      };
+
+      const rows = attempts.map(attempt => [
+        attempt.prelimes_attempt_id || '',
+        attempt.userId?.userId || '',
+        attempt.userId?.name || '',
+        attempt.userId?.email || '',
+        attempt.userId?.mobile_number || '',
+        attempt.testId?.prelimes_test_id || '',
+        attempt.testId?.title || '',
+        testTypeMap[attempt.testId?.test_type] || attempt.testId?.test_type || '',
+        attempt.attemptNumber || '',
+        attempt.startedAt ? new Date(attempt.startedAt).toLocaleString() : '',
+        attempt.submittedAt ? new Date(attempt.submittedAt).toLocaleString() : '',
+        attempt.result?.totalQuestions ?? '',
+        attempt.result?.attempted ?? '',
+        attempt.result?.correct ?? '',
+        attempt.result?.wrong ?? '',
+        attempt.result?.skipped ?? '',
+        attempt.result?.score ?? '',
+        attempt.result?.percentage != null ? `${attempt.result.percentage}%` : '',
+        attempt.result?.accuracy != null ? `${attempt.result.accuracy}%` : '',
+        attempt.result?.timeSpent ?? '',
+        attempt.result?.rank ?? '',
+        attempt.result?.totalParticipants ?? '',
+        attempt.result?.percentile ?? ''
+      ]);
+
+      const filenamePrefix = test_type ? `prelimes_${test_type.toLowerCase()}_attempts` : 'prelimes_all_attempts';
+
+      if (format === 'csv') {
+        const csvString = exportToCsvString(headers, rows);
+        const buffer = Buffer.from(csvString, 'utf-8');
+        res.set({
+          'Content-Type': 'text/csv; charset=utf-8',
+          'Content-Disposition': `attachment; filename="${filenamePrefix}_export.csv"`,
+          'Content-Length': buffer.length,
+        });
+        return res.end(buffer);
+      } else {
+        const buffer = exportToExcelBuffer(headers, rows, 'Prelims Attempts');
+        res.set({
+          'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'Content-Disposition': `attachment; filename="${filenamePrefix}_export.xlsx"`,
+          'Content-Length': buffer.length,
+        });
+        return res.end(buffer);
+      }
+    } catch (error) {
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+      });
+    }
+  }
+
   @Get(':id')
   get(@Param('id') id: string) {
     return this.prelimesTestsService.getAttempt(id);
@@ -173,5 +270,108 @@ export class PrelimesTestsController {
   @Post('/user_attempts')
   getUserAtetmpts(@Body() req: StartAttemptDto) {
     return this.prelimesTestsService.getUserTestAttempts(req);
+  }
+
+  @Get('/user_attempts/export')
+  async exportUserAttempts(
+    @Res() res: Response,
+    @Query('userId') userId: string,
+    @Query('testId') testId: string,
+    @Query('format') format = 'excel',
+  ) {
+    if (!userId || !testId) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'userId and testId query parameters are required',
+      });
+    }
+
+    try {
+      const attempts = await this.prelimesTestsService.getUserTestAttemptsForExport(userId, testId);
+
+      const headers = [
+        'Attempt ID',
+        'Student ID',
+        'Student Name',
+        'Student Email',
+        'Student Mobile Number',
+        'Test ID',
+        'Test Title',
+        'Test Type',
+        'Attempt Number',
+        'Started At',
+        'Submitted At',
+        'Total Questions',
+        'Attempted',
+        'Correct',
+        'Wrong',
+        'Skipped',
+        'Score',
+        'Percentage',
+        'Accuracy',
+        'Time Spent (sec)',
+        'Rank',
+        'Total Participants',
+        'Percentile'
+      ];
+
+      const testTypeMap: Record<string, string> = {
+        'SMT': 'Subject-wise Mock Test',
+        'GT': 'Grand Test',
+        'QZ': 'Quiz'
+      };
+
+      const rows = attempts.map(attempt => [
+        attempt.prelimes_attempt_id || '',
+        attempt.userId || '',
+        attempt.user?.name || '',
+        attempt.user?.email || '',
+        attempt.user?.mobile_number || '',
+        attempt.testId || '',
+        attempt.testInfo?.title || '',
+        testTypeMap[attempt.testInfo?.test_type] || attempt.testInfo?.test_type || '',
+        attempt.attemptNumber || '',
+        attempt.startedAt ? new Date(attempt.startedAt).toLocaleString() : '',
+        attempt.submittedAt ? new Date(attempt.submittedAt).toLocaleString() : '',
+        attempt.result?.totalQuestions ?? '',
+        attempt.result?.attempted ?? '',
+        attempt.result?.correct ?? '',
+        attempt.result?.wrong ?? '',
+        attempt.result?.skipped ?? '',
+        attempt.result?.score ?? '',
+        attempt.result?.percentage != null ? `${attempt.result.percentage}%` : '',
+        attempt.result?.accuracy != null ? `${attempt.result.accuracy}%` : '',
+        attempt.result?.timeSpent ?? '',
+        attempt.result?.rank ?? '',
+        attempt.result?.totalParticipants ?? '',
+        attempt.result?.percentile ?? ''
+      ]);
+
+      const filenamePrefix = `user_${userId}_test_${testId}_attempts`;
+
+      if (format === 'csv') {
+        const csvString = exportToCsvString(headers, rows);
+        const buffer = Buffer.from(csvString, 'utf-8');
+        res.set({
+          'Content-Type': 'text/csv; charset=utf-8',
+          'Content-Disposition': `attachment; filename="${filenamePrefix}_export.csv"`,
+          'Content-Length': buffer.length,
+        });
+        return res.end(buffer);
+      } else {
+        const buffer = exportToExcelBuffer(headers, rows, 'User Attempts');
+        res.set({
+          'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'Content-Disposition': `attachment; filename="${filenamePrefix}_export.xlsx"`,
+          'Content-Length': buffer.length,
+        });
+        return res.end(buffer);
+      }
+    } catch (error) {
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+      });
+    }
   }
 }
