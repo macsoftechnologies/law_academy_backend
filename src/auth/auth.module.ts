@@ -6,6 +6,10 @@ import { APP_GUARD } from '@nestjs/core';
 import { RolesGuard } from './guards/roles.guard';
 import { ConfigService, ConfigModule } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
+import { MongooseModule } from '@nestjs/mongoose';
+import { User, userSchema } from '../users/schemas/user.schema';
+import { Admin, adminSchema } from '../admin/schema/admin.schema';
+import { SuperAdmin, superadminSchema } from '../admin/schema/superadmin.schema';
 
 @Module({
   imports: [
@@ -19,6 +23,11 @@ import { PassportModule } from '@nestjs/passport';
         signOptions: { expiresIn: '10s' },
       }),
     }),
+    MongooseModule.forFeature([
+      { name: User.name, schema: userSchema },
+      { name: Admin.name, schema: adminSchema },
+      { name: SuperAdmin.name, schema: superadminSchema },
+    ]),
   ],
   providers: [
     AuthService,

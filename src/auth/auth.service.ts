@@ -6,15 +6,21 @@ import moment = require('moment');
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(private readonly jwtService: JwtService) { }
 
-  async createToken(user: any): Promise<{ token: string } | any> {
+  async createToken(user: any, sessionId?: string): Promise<{ token: string; expiresAt?: number }> {
     const secretKey = process.env.JWT_SECRET;
     const jwtToken = await this.jwtService.signAsync(
-      { user },
-      { secret: secretKey },
+      { user, sessionId },
+      {
+        secret: secretKey,
+        expiresIn: '7d',
+      },
     );
-    return jwtToken;
+    const decoded: any = this.jwtService.decode(jwtToken);
+    // console.log("decoded", decoded);
+    const expiresAt = decoded?.exp ? decoded.exp * 1000 : undefined;
+    return { token: jwtToken, expiresAt };
   }
 
   async hashPassword(password: string) {
@@ -35,22 +41,22 @@ export class AuthService {
     }
   }
 
-    async saveFile(file: any): Promise<any> {
-      try {
-        let fileName = file.originalname;
-        fileName = fileName.replace(/\//g, '-');
-        fileName = fileName.replace(/ /g, '_');
-        fileName = fileName.replace(/[()]/g, '');
+  async saveFile(file: any): Promise<any> {
+    try {
+      let fileName = file.originalname;
+      fileName = fileName.replace(/\//g, '-');
+      fileName = fileName.replace(/ /g, '_');
+      fileName = fileName.replace(/[()]/g, '');
 
-        const filePath = moment() + '-' + fileName;
+      const filePath = moment() + '-' + fileName;
 
-        console.log(filePath);
-        await fs.writeFileSync('./files/' + filePath, file.buffer, 'buffer');
+      console.log(filePath);
+      await fs.writeFileSync('./files/' + filePath, file.buffer, 'buffer');
 
-        return filePath;
-      } catch (err) {
-        // An error occurred
-        console.error(err);
-      }
+      return filePath;
+    } catch (err) {
+      // An error occurred
+      console.error(err);
+    }
   }
 }

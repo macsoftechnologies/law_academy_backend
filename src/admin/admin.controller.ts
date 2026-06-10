@@ -6,6 +6,7 @@ import {
   Post,
   Query,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { adminDto } from './dto/admin.dto';
@@ -98,6 +99,22 @@ export class AdminController {
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error,
+      };
+    }
+  }
+
+  @UseGuards(JwtGuard)
+  @Post('/logout')
+  async logout(@Req() req: any) {
+    try {
+      const isSuperAdmin = req.user.role === Role.SUPERADMIN;
+      const adminId = req.user.adminId || req.user.superadmin_id;
+      const result = await this.adminService.logout(adminId, isSuperAdmin);
+      return result;
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message || error,
       };
     }
   }

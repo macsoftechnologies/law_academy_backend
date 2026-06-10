@@ -9,4 +9,6 @@ export class superadminDto{
     mobile_number: string
     @ApiProperty()
     password: string
+    @ApiProperty({ required: false })
+    force?: boolean
 }

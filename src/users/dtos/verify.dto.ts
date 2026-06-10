@@ -5,4 +5,6 @@ export class verifyDto {
   userId: string;
   @ApiProperty()
   otp: string;
+  @ApiProperty({ required: false })
+  force?: boolean;
 }

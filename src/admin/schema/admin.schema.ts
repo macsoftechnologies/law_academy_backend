@@ -17,6 +17,12 @@ export class Admin extends Document{
     role: string
     @Prop()
     access_modules: string[]
+
+    @Prop()
+    activeTokenSessionId: string
+
+    @Prop({ type: Date })
+    sessionExpiresAt: Date | null
 }
 
 export const adminSchema = SchemaFactory.createForClass(Admin);

@@ -15,6 +15,12 @@ export class SuperAdmin extends Document{
     password: string
     @Prop({ default: Role.SUPERADMIN })
     role: string
+
+    @Prop()
+    activeTokenSessionId: string
+
+    @Prop({ type: Date })
+    sessionExpiresAt: Date | null
 }
 
 export const superadminSchema = SchemaFactory.createForClass(SuperAdmin);

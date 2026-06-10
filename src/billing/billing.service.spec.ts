@@ -1,15 +1,29 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BillingService } from './billing.service';
+import { BillingsService } from './billing.service';
+import { getModelToken } from '@nestjs/mongoose';
 
-describe('BillingService', () => {
-  let service: BillingService;
+const mockBillingModel = {};
+const mockEnrollmentModel = {};
+
+describe('BillingsService', () => {
+  let service: BillingsService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [BillingService],
+      providers: [
+        BillingsService,
+        {
+          provide: getModelToken('Billing'),
+          useValue: mockBillingModel,
+        },
+        {
+          provide: getModelToken('Enrollment'),
+          useValue: mockEnrollmentModel,
+        },
+      ],
     }).compile();
 
-    service = module.get<BillingService>(BillingService);
+    service = module.get<BillingsService>(BillingsService);
   });
 
   it('should be defined', () => {

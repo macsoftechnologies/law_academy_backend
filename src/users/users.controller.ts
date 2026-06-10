@@ -8,6 +8,7 @@ import {
   UploadedFiles,
   UseGuards,
   UseInterceptors,
+  Req,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { registerDto } from './dtos/register.dto';
@@ -94,6 +95,20 @@ export class UsersController {
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error,
+      };
+    }
+  }
+
+  @UseGuards(JwtGuard)
+  @Post('/logout')
+  async logout(@Req() req: any) {
+    try {
+      const result = await this.usersService.logout(req.user.userId);
+      return result;
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message || error,
       };
     }
   }

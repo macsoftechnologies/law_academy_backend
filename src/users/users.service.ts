@@ -1,6 +1,7 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from './schemas/user.schema';
+import { v4 as uuid } from 'uuid';
 import { Model } from 'mongoose';
 import { EducationalCertificates } from './schemas/educational_certificates.schema';
 import { IdProof } from './schemas/idproofs.schema';
@@ -93,6 +94,14 @@ export class UsersService {
     }
   }
 
+  private isUserAlreadyLoggedIn(user: any): boolean {
+    return !!(
+      user.activeTokenSessionId &&
+      user.sessionExpiresAt &&
+      new Date(user.sessionExpiresAt) > new Date()
+    );
+  }
+
   async loginUser(req: loginDto) {
     try {
       const findUser = await this.userModel.findOne({
@@ -110,14 +119,15 @@ export class UsersService {
         );
         // console.log(matchPassword);
         if (matchPassword) {
-          //   const jwtToken = await this.authService.createToken({ findUser });
-          //     console.log(jwtToken);
-          //   return {
-          //     statusCode: HttpStatus.OK,
-          //     message: 'User Login successfully',
-          //     token: jwtToken,
-          //     data: findUser,
-          //   };
+          const isAlreadyLoggedIn = this.isUserAlreadyLoggedIn(findUser);
+
+          if (isAlreadyLoggedIn) {
+            return {
+              statusCode: HttpStatus.CONFLICT,
+              message:
+                'User is already logged in on another device. Please logout first or force login.',
+            };
+          }
           return {
             statusCode: HttpStatus.OK,
             message: 'Login Successful.Please verify your account.',
@@ -170,6 +180,16 @@ export class UsersService {
           message: 'User Not Found',
         };
       }
+
+      const isAlreadyLoggedIn = this.isUserAlreadyLoggedIn(findUser);
+
+      if (isAlreadyLoggedIn) {
+        return {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'User is already logged in on another device. Please logout first or force login.',
+        };
+      }
       return {
         statusCode: HttpStatus.OK,
         message: `OTP sent successfully via ${loginType}`,
@@ -220,12 +240,37 @@ export class UsersService {
     try {
       const findUser = await this.userModel.findOne({ userId: req.userId });
       if (findUser && req.otp == '12345') {
-        const jwtToken = await this.authService.createToken({ findUser });
-        //   console.log(jwtToken);
+        const isAlreadyLoggedIn =
+          findUser.activeTokenSessionId &&
+          findUser.sessionExpiresAt &&
+          findUser.sessionExpiresAt > new Date();
+
+        if (isAlreadyLoggedIn && !req.force) {
+          return {
+            statusCode: HttpStatus.CONFLICT,
+            message: 'User is already logged in on another device. Please logout first or force login.',
+          };
+        }
+
+        const sessionId = uuid();
+        const { token, expiresAt } = await this.authService.createToken({ findUser }, sessionId);
+
+        await this.userModel.updateOne(
+          { userId: req.userId },
+          {
+            $set: {
+              activeTokenSessionId: sessionId,
+              sessionExpiresAt: expiresAt ? new Date(expiresAt) : null
+            }
+          },
+        );
+        findUser.activeTokenSessionId = sessionId;
+        findUser.sessionExpiresAt = expiresAt ? new Date(expiresAt) : null;
+
         return {
           statusCode: HttpStatus.OK,
           message: 'User Verified successfully',
-          token: jwtToken,
+          token,
           data: findUser,
         };
       }
@@ -830,6 +875,29 @@ export class UsersService {
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error,
+      };
+    }
+  }
+
+  async logout(userId: string) {
+    try {
+      await this.userModel.updateOne(
+        { userId },
+        {
+          $set: {
+            activeTokenSessionId: null,
+            sessionExpiresAt: null
+          }
+        },
+      );
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Logged out successfully',
+      };
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message || error,
       };
     }
   }

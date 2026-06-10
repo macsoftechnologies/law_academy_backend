@@ -1,17 +1,24 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BillingController } from './billing.controller';
-import { BillingService } from './billing.service';
+import { BillingsController } from './billing.controller';
+import { BillingsService } from './billing.service';
 
-describe('BillingController', () => {
-  let controller: BillingController;
+const mockBillingsService = {};
+
+describe('BillingsController', () => {
+  let controller: BillingsController;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      controllers: [BillingController],
-      providers: [BillingService],
+      controllers: [BillingsController],
+      providers: [
+        {
+          provide: BillingsService,
+          useValue: mockBillingsService,
+        },
+      ],
     }).compile();
 
-    controller = module.get<BillingController>(BillingController);
+    controller = module.get<BillingsController>(BillingsController);
   });
 
   it('should be defined', () => {

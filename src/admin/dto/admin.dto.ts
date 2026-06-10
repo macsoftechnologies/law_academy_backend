@@ -13,4 +13,6 @@ export class adminDto{
     role: string
     @ApiProperty()
     access_modules: string[]
+    @ApiProperty({ required: false })
+    force?: boolean
 }

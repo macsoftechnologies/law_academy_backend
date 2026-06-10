@@ -1,6 +1,7 @@
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { adminDto } from './dto/admin.dto';
 import { Admin } from './schema/admin.schema';
+import { v4 as uuid } from 'uuid';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { AuthService } from 'src/auth/auth.service';
@@ -14,7 +15,7 @@ export class AdminService {
     @InjectModel(SuperAdmin.name)
     private readonly superAdminModel: Model<SuperAdmin>,
     private readonly authService: AuthService,
-  ) {}
+  ) { }
 
   async createSuperAdmin(req: superadminDto) {
     try {
@@ -73,12 +74,38 @@ export class AdminService {
         );
         // console.log(matchPassword);
         if (matchPassword) {
-          const jwtToken = await this.authService.createToken({ findAdmin });
-          console.log(jwtToken);
+          const isAlreadyLoggedIn =
+            findAdmin.activeTokenSessionId &&
+            findAdmin.sessionExpiresAt &&
+            findAdmin.sessionExpiresAt > new Date();
+
+          if (isAlreadyLoggedIn && !req.force) {
+            return {
+              statusCode: HttpStatus.CONFLICT,
+              message: 'Super Admin is already logged in on another device. Please logout first or force login.',
+            };
+          }
+
+          const sessionId = uuid();
+          const { token, expiresAt } = await this.authService.createToken({ findAdmin }, sessionId);
+          // console.log("admin", findAdmin, sessionId, token, expiresAt);
+
+          await this.superAdminModel.updateOne(
+            { superadmin_id: findAdmin.superadmin_id },
+            {
+              $set: {
+                activeTokenSessionId: sessionId,
+                sessionExpiresAt: expiresAt ? new Date(expiresAt) : null
+              }
+            },
+          );
+          findAdmin.activeTokenSessionId = sessionId;
+          findAdmin.sessionExpiresAt = expiresAt ? new Date(expiresAt) : null;
+          // console.log(expiresAt);
           return {
             statusCode: HttpStatus.OK,
             message: 'Super Admin Login successfull',
-            token: jwtToken,
+            token,
             data: findAdmin,
           };
         } else {
@@ -224,12 +251,37 @@ export class AdminService {
         );
         // console.log(matchPassword);
         if (matchPassword) {
-          const jwtToken = await this.authService.createToken({ findAdmin });
-          console.log(jwtToken);
+          const isAlreadyLoggedIn =
+            findAdmin.activeTokenSessionId &&
+            findAdmin.sessionExpiresAt &&
+            findAdmin.sessionExpiresAt > new Date();
+
+          if (isAlreadyLoggedIn && !req.force) {
+            return {
+              statusCode: HttpStatus.CONFLICT,
+              message: 'Admin is already logged in on another device. Please logout first or force login.',
+            };
+          }
+
+          const sessionId = uuid();
+          const { token, expiresAt } = await this.authService.createToken({ findAdmin }, sessionId);
+
+          await this.adminModel.updateOne(
+            { adminId: findAdmin.adminId },
+            {
+              $set: {
+                activeTokenSessionId: sessionId,
+                sessionExpiresAt: expiresAt ? new Date(expiresAt) : null
+              }
+            },
+          );
+          findAdmin.activeTokenSessionId = sessionId;
+          findAdmin.sessionExpiresAt = expiresAt ? new Date(expiresAt) : null;
+          console.log(token);
           return {
             statusCode: HttpStatus.OK,
             message: 'Admin Login successfull',
-            token: jwtToken,
+            token,
             data: findAdmin,
           };
         } else {
@@ -340,6 +392,41 @@ export class AdminService {
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error,
+      };
+    }
+  }
+
+  async logout(adminId: string, isSuperAdmin: boolean) {
+    try {
+      if (isSuperAdmin) {
+        await this.superAdminModel.updateOne(
+          { superadmin_id: adminId },
+          {
+            $set: {
+              activeTokenSessionId: null,
+              sessionExpiresAt: null
+            }
+          },
+        );
+      } else {
+        await this.adminModel.updateOne(
+          { adminId },
+          {
+            $set: {
+              activeTokenSessionId: null,
+              sessionExpiresAt: null
+            }
+          },
+        );
+      }
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Logged out successfully',
+      };
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message || error,
       };
     }
   }

@@ -35,6 +35,12 @@ export class User extends Document{
     permanent_address: string
     @Prop({ default: Role.STUDENT })
     role: string
+
+    @Prop()
+    activeTokenSessionId: string
+
+    @Prop({ type: Date })
+    sessionExpiresAt: Date | null
 }
 
 export const userSchema = SchemaFactory.createForClass(User);
