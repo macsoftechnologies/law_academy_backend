@@ -16,6 +16,7 @@ import {
     UpdateCallStatusDto,
 } from './dto/ticket.dto';
 import { Ticket, TicketDocument, TicketStatus, TicketType, CallStatus } from './schema/ticket.schema';
+import { User } from 'src/users/schemas/user.schema';
 
 // Roles allowed to act on each ticket type
 const COURSE_TICKET_ROLES = ['admin', 'superadmin', 'teacher'];
@@ -25,6 +26,7 @@ const SUPPORT_TICKET_ROLES = ['admin', 'superadmin', 'support', 'supportadmin'];
 export class TicketService {
     constructor(
         @InjectModel(Ticket.name) private ticketModel: Model<TicketDocument>,
+        @InjectModel(User.name) private userModel: Model<User>,
     ) { }
 
     // ─────────────────────────────────────────────
@@ -209,8 +211,21 @@ export class TicketService {
             this.ticketModel.countDocuments(query),
         ]);
 
+        const userIds = [...new Set(tickets.map((t) => t.userId).filter(Boolean))];
+        const users = await this.userModel
+            .find({ userId: { $in: userIds } })
+            .select('userId name email mobile_number')
+            .lean();
+
+        const userMap = new Map(users.map((u) => [u.userId, u]));
+
+        const ticketsWithUser = tickets.map((ticket) => ({
+            ...ticket,
+            student: userMap.get(ticket.userId) || null,
+        }));
+
         return {
-            tickets,
+            tickets: ticketsWithUser,
             pagination: {
                 total,
                 page,
@@ -220,8 +235,8 @@ export class TicketService {
         };
     }
 
-    async getAdminTicketDetails(ticketId: string, user: any): Promise<TicketDocument> {
-        const ticket = await this.ticketModel.findOne({ ticketId });
+    async getAdminTicketDetails(ticketId: string, user: any): Promise<any> {
+        const ticket = await this.ticketModel.findOne({ ticketId }).lean();
         if (!ticket) throw new NotFoundException('Ticket not found');
 
         if (!this.canAccessTicket(ticket.ticket_type, user.role)) {
@@ -229,7 +244,13 @@ export class TicketService {
                 `Your role (${user.role}) is not permitted to view ${ticket.ticket_type} tickets`,
             );
         }
-        return ticket;
+
+        const student = await this.userModel
+            .findOne({ userId: ticket.userId })
+            .select('userId name email mobile_number')
+            .lean();
+
+        return { ...ticket, student: student || null };
     }
 
     async addAdminMessage(dto: AddMessageDto, user: any): Promise<TicketDocument> {
